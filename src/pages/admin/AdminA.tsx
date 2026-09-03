@@ -4,7 +4,6 @@ import { useStore } from "../../lib/store";
 import { TYPE_META } from "../../lib/seed";
 import { I, Logo } from "../../components/icons";
 import { Avatar, Badge, Btn, Confirm, Drawer, EmptyState, Field, fmtDate, Modal, money, SearchInput, Select, StatusBadge, TextArea, TextInput, timeAgo, Toggle, useDebounced, useNoIndex, usePageTitle } from "../../components/ui";
-import { Reveal, Stagger, StaggerItem } from "../../lib/motion";
 import type { Category, PermissionKey, Product, ProductType } from "../../lib/types";
 
 /* ------------------------------- shell ------------------------------- */
@@ -174,20 +173,18 @@ export function AdminOverview() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-7">
-      <Stagger className="grid grid-cols-2 gap-3.5 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3.5 md:grid-cols-4">
         {kpis.map((k) => (
-          <StaggerItem key={k.label}>
-            <Link to={k.to} className="card card-hover group p-4">
-              <span className={`mb-3 grid size-10 place-items-center rounded-lg border ${k.tone}`}><I name={k.icon} size={18} /></span>
-              <p className="num text-2xl font-bold text-mist-100">{k.val}</p>
-              <p className="mt-0.5 text-[11.5px] font-semibold text-mist-500">{k.label}</p>
-            </Link>
-          </StaggerItem>
+          <Link key={k.label} to={k.to} className="card card-hover group p-4">
+            <span className={`mb-3 grid size-10 place-items-center rounded-lg border ${k.tone}`}><I name={k.icon} size={18} /></span>
+            <p className="num text-2xl font-bold text-mist-100">{k.val}</p>
+            <p className="mt-0.5 text-[11.5px] font-semibold text-mist-500">{k.label}</p>
+          </Link>
         ))}
-      </Stagger>
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
-        <Reveal>
+        <div>
           <div className="card p-6">
             <div className="mb-5 flex items-center justify-between">
               <div>
@@ -210,9 +207,9 @@ export function AdminOverview() {
               ))}
             </div>
           </div>
-        </Reveal>
+        </div>
 
-        <Reveal delay={0.08}>
+        <div>
           <div className="card p-6">
             <h3 className="mb-4 font-display text-[16px] font-bold tracking-tight">Needs attention</h3>
             <div className="space-y-3">
@@ -240,11 +237,11 @@ export function AdminOverview() {
               {openTickets.length === 0 && <p className="text-[12.5px] text-mist-500">Queue is clear — nice work.</p>}
             </div>
           </div>
-        </Reveal>
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Reveal>
+        <div>
           <div className="card overflow-hidden">
             <div className="flex items-center justify-between border-b border-mist-100/10 px-5 py-3.5">
               <h3 className="font-display text-[15px] font-bold">Recent orders</h3>
@@ -264,8 +261,8 @@ export function AdminOverview() {
               })}
             </div>
           </div>
-        </Reveal>
-        <Reveal delay={0.08}>
+        </div>
+        <div>
           <div className="card overflow-hidden">
             <div className="flex items-center justify-between border-b border-mist-100/10 px-5 py-3.5">
               <h3 className="font-display text-[15px] font-bold">Recent customers</h3>
@@ -288,7 +285,7 @@ export function AdminOverview() {
               })}
             </div>
           </div>
-        </Reveal>
+        </div>
       </div>
     </div>
   );
