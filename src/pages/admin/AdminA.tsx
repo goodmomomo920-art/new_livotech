@@ -423,9 +423,9 @@ export function AdminCustomers() {
 
 /* -------------------------------- products -------------------------------- */
 
-const blankProduct = (): Product => ({
+const blankProduct = (categories: { id: string }[]): Product => ({
   id: `p-${Date.now().toString(36)}`, slug: "", name: "", tagline: "", description: "",
-  type: "website", categoryId: "c-web", image: "", gallery: [],
+  type: "website", categoryId: categories[0]?.id ?? "", image: "", gallery: [],
   price: 99, billing: "once", rating: 4.5, reviews: 0,
   features: [], tags: [], faqs: [], files: [], downloadable: false,
   active: true, featured: false, version: "1.0.0",
@@ -444,7 +444,7 @@ export function AdminProducts() {
 
   return (
     <AdminShell title="Products" sub="Create, price, feature, archive — everything is audited"
-      actions={can("products") ? <Btn size="sm" icon="plus" onClick={() => setEditing(blankProduct())}>New product</Btn> : undefined}>
+      actions={can("products") ? <Btn size="sm" icon="plus" onClick={() => setEditing(blankProduct(state.categories))}>New product</Btn> : undefined}>
       {!can("products") ? <Restricted perm="products" /> : (
         <div className="mx-auto max-w-6xl">
           <SearchInput value={q} onChange={setQ} placeholder="Search products…" className="mb-5 max-w-sm" />
