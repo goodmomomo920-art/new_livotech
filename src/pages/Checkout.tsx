@@ -96,8 +96,7 @@ export default function CheckoutPage() {
   /* ------------------------------ success ------------------------------ */
 
   if (step === "done" && order) {
-    const baseItemId = order.items.find((i) => i.type !== "addon")?.productId ?? order.items[0]?.productId;
-    const p = state.products.find((x) => x.id === baseItemId);
+    const p = product ?? state.products.find((x) => x.id === (order.items.find((i) => i.type !== "addon")?.productId ?? order.items[0]?.productId));
     return (
       <div className="container-x flex min-h-[70vh] items-center justify-center py-16">
         <Reveal className="w-full max-w-xl">
