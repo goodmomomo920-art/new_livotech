@@ -362,18 +362,30 @@ export function SupportPage() {
       return;
     }
     setBusy(true);
-    await createTicket(form.subject.trim(), form.category, form.body.trim());
-    setBusy(false); setCreating(false);
-    setForm({ subject: "", category: "Websites", body: "" });
-    toast("success", "Ticket opened", "Support replies land in your notifications.");
+    try {
+      await createTicket(form.subject.trim(), form.category, form.body.trim());
+      setCreating(false);
+      setForm({ subject: "", category: "Websites", body: "" });
+      toast("success", "Ticket opened", "Support replies land in your notifications.");
+    } catch (e) {
+      toast("error", "Couldn't open ticket", e instanceof Error ? e.message : "Something went wrong — try again.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const sendReply = async (ticketId: string) => {
     if (reply.trim().length < 2 || !me) return;
     setBusy(true);
-    await replyTicket(ticketId, reply.trim(), "customer", me.name);
-    setReply(""); setBusy(false);
-    toast("success", "Reply sent", "The thread moved back to the support queue.");
+    try {
+      await replyTicket(ticketId, reply.trim(), "customer", me.name);
+      setReply("");
+      toast("success", "Reply sent", "The thread moved back to the support queue.");
+    } catch (e) {
+      toast("error", "Couldn't send reply", e instanceof Error ? e.message : "Something went wrong — try again.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
