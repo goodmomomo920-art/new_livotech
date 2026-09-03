@@ -315,7 +315,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         renewsAt: ad.interval === "monthly" ? new Date(Date.now() + 30 * 864e5).toISOString() : null,
       }));
       if (ad.interval === "monthly") {
-        check(await supabase.from("subscriptions").insert({ customerId: me.id, productId: ad.id, orderId: order.id, plan: ad.name, price: ad.price, interval: "monthly", status: "active", nextBillingAt: new Date(Date.now() + 30 * 864e5).toISOString() }));
+        check(await supabase.from("subscriptions").insert({ customerId: me.id, productId: product.id, orderId: order.id, plan: `${ad.name} · ${product.name}`, price: ad.price, interval: "monthly", status: "active", nextBillingAt: new Date(Date.now() + 30 * 864e5).toISOString() }));
       }
     }
     if (!ownedBase && product.type === "website") {
