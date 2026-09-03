@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useStore } from "../../lib/store";
 import { I } from "../../components/icons";
 import { Avatar, Badge, Btn, Confirm, EmptyState, Field, fmtDate, fmtDateTime, Modal, money, Pagination, Select, StatusBadge, TextArea, TextInput, timeAgo, usePageTitle } from "../../components/ui";
+import { downloadInvoicePdf } from "../../lib/invoice";
 import { Reveal, Stagger, StaggerItem } from "../../lib/motion";
 import { DashShell } from "./DashboardA";
 import type { Order } from "../../lib/types";
@@ -168,23 +169,12 @@ export function BillingPage() {
   const activeSubValue = state.subscriptions.filter((s) => s.customerId === me?.id && s.status === "active" && s.interval === "monthly").reduce((s, x) => s + x.price, 0);
 
   const invoice = (o: Order) => {
-    const lines = [
-      `LivoTech — Invoice ${o.number}`, "=".repeat(38),
-      `Billed to : ${me?.name} <${me?.email}>`,
-      `Date      : ${fmtDate(o.createdAt)}`,
-      `Method    : ${o.paymentMethod}`, "",
-      ...o.items.map((i) => `${i.name.padEnd(34)} ${money(i.total)}`),
-      o.discount ? `${`Discount (${o.couponCode})`.padEnd(34)} -${money(o.discount)}` : "",
-      "-".repeat(38),
-      `${"TOTAL".padEnd(34)} ${money(o.total)}`,
-      "", "Demo document — production invoices are generated server-side.",
-    ].filter(Boolean).join("\n");
-    const blob = new Blob([lines], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = `livo-invoice-${o.number}.txt`; a.click();
-    window.setTimeout(() => URL.revokeObjectURL(url), 3000);
-    toast("success", "Invoice downloaded", `${o.number} exported as a demo document.`);
+    downloadInvoicePdf(
+      o,
+      { brand: state.settings.brand, contactEmail: state.settings.contactEmail },
+      { name: me?.name ?? "", email: me?.email ?? "", company: me?.company },
+    );
+    toast("success", "Invoice downloaded", `${o.number} saved as a PDF.`);
   };
 
   return (
