@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { useStore } from "../../lib/store";
 import { I } from "../../components/icons";
 import { Avatar, Badge, Btn, Confirm, EmptyState, Field, fmtDate, fmtDateTime, Modal, money, Pagination, Select, StatusBadge, TextArea, TextInput, timeAgo, usePageTitle } from "../../components/ui";
-import { downloadInvoicePdf } from "../../lib/invoice";
 import { Reveal, Stagger, StaggerItem } from "../../lib/motion";
 import { DashShell } from "./DashboardA";
 import type { Order } from "../../lib/types";
@@ -169,12 +168,23 @@ export function BillingPage() {
   const activeSubValue = state.subscriptions.filter((s) => s.customerId === me?.id && s.status === "active" && s.interval === "monthly").reduce((s, x) => s + x.price, 0);
 
   const invoice = (o: Order) => {
-    downloadInvoicePdf(
-      o,
-      { brand: state.settings.brand, contactEmail: state.settings.contactEmail },
-      { name: me?.name ?? "", email: me?.email ?? "", company: me?.company },
-    );
-    toast("success", "Invoice downloaded", `${o.number} saved as a PDF.`);
+    const lines = [
+      `LivoTech — Invoice ${o.number}`, "=".repeat(38),
+      `Billed to : ${me?.name} <${me?.email}>`,
+      `Date      : ${fmtDate(o.createdAt)}`,
+      `Method    : ${o.paymentMethod}`, "",
+      ...o.items.map((i) => `${i.name.padEnd(34)} ${money(i.total)}`),
+      o.discount ? `${`Discount (${o.couponCode})`.padEnd(34)} -${money(o.discount)}` : "",
+      "-".repeat(38),
+      `${"TOTAL".padEnd(34)} ${money(o.total)}`,
+      "", "Demo document — production invoices are generated server-side.",
+    ].filter(Boolean).join("\n");
+    const blob = new Blob([lines], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `livo-invoice-${o.number}.txt`; a.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 3000);
+    toast("success", "Invoice downloaded", `${o.number} exported as a demo document.`);
   };
 
   return (
@@ -352,30 +362,18 @@ export function SupportPage() {
       return;
     }
     setBusy(true);
-    try {
-      await createTicket(form.subject.trim(), form.category, form.body.trim());
-      setCreating(false);
-      setForm({ subject: "", category: "Websites", body: "" });
-      toast("success", "Ticket opened", "Support replies land in your notifications.");
-    } catch (e) {
-      toast("error", "Couldn't open ticket", e instanceof Error ? e.message : "Something went wrong — try again.");
-    } finally {
-      setBusy(false);
-    }
+    await createTicket(form.subject.trim(), form.category, form.body.trim());
+    setBusy(false); setCreating(false);
+    setForm({ subject: "", category: "Websites", body: "" });
+    toast("success", "Ticket opened", "Support replies land in your notifications.");
   };
 
   const sendReply = async (ticketId: string) => {
     if (reply.trim().length < 2 || !me) return;
     setBusy(true);
-    try {
-      await replyTicket(ticketId, reply.trim(), "customer", me.name);
-      setReply("");
-      toast("success", "Reply sent", "The thread moved back to the support queue.");
-    } catch (e) {
-      toast("error", "Couldn't send reply", e instanceof Error ? e.message : "Something went wrong — try again.");
-    } finally {
-      setBusy(false);
-    }
+    await replyTicket(ticketId, reply.trim(), "customer", me.name);
+    setReply(""); setBusy(false);
+    toast("success", "Reply sent", "The thread moved back to the support queue.");
   };
 
   return (

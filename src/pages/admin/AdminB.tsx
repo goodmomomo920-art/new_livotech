@@ -579,15 +579,9 @@ export function AdminSupport() {
   const send = async () => {
     if (!open || reply.trim().length < 2 || !me) return;
     setBusy(true);
-    try {
-      await replyTicket(open.id, reply.trim(), "support", me.name);
-      setReply("");
-      toast("success", "Reply sent", "The customer was notified.");
-    } catch (e) {
-      toast("error", "Couldn't send reply", e instanceof Error ? e.message : "Something went wrong — try again.");
-    } finally {
-      setBusy(false);
-    }
+    await replyTicket(open.id, reply.trim(), "support", me.name);
+    setReply(""); setBusy(false);
+    toast("success", "Reply sent", "The customer was notified.");
   };
 
   return (

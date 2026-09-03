@@ -388,7 +388,7 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            <p className="relative mt-8 text-center text-[11.5px] text-mist-500">Live numbers, updated in real time.</p>
+            <p className="relative mt-8 text-center text-[11.5px] text-mist-500">Live numbers from this demo dataset — not fake production stats.</p>
           </div>
         </Reveal>
       </section>

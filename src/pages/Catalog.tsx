@@ -4,7 +4,7 @@ import { useStore } from "../lib/store";
 import { TYPE_META } from "../lib/seed";
 import { I } from "../components/icons";
 import { Badge, CardSkeleton, Pagination, SearchInput, Select, useDebounced, usePageTitle, useSimLoad } from "../components/ui";
-import { Reveal, Stagger, StaggerItem } from "../lib/motion";
+import { Reveal, StaggerNow, StaggerItemNow } from "../lib/motion";
 import { ProductCard } from "../components/product";
 import type { ProductType } from "../lib/types";
 
@@ -136,11 +136,11 @@ export default function CatalogPage({ mode }: { mode: CatalogMode }) {
             </button>
           </div>
         ) : (
-          <Stagger className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <StaggerNow className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {paged.map((p, i) => (
-              <StaggerItem key={p.id} className="h-full"><div className="h-full"><ProductCard product={p} index={i} /></div></StaggerItem>
+              <StaggerItemNow key={p.id} className="h-full"><div className="h-full"><ProductCard product={p} index={i} /></div></StaggerItemNow>
             ))}
-          </Stagger>
+          </StaggerNow>
         )}
 
         <div className="mt-10">
