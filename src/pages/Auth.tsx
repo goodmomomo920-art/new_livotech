@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useStore } from "../lib/store";
-import { DEMO_ACCOUNTS } from "../lib/seed";
 import { I, Logo } from "../components/icons";
 import { Btn, Field, TextInput, usePageTitle } from "../components/ui";
 
@@ -87,21 +86,6 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
               Websites, POS systems, templates and e-books — everything lands in one dashboard the moment payment clears.
             </p>
           </div>
-          <div className="card max-w-md border-solar-400/30 p-5">
-            <p className="mb-3 flex items-center gap-2 text-[12px] font-bold uppercase tracking-wider text-solar-300"><I name="key" size={14} /> Demo accounts — one click to fill</p>
-            <div className="grid gap-2">
-              {DEMO_ACCOUNTS.map((d) => (
-                <button
-                  key={d.email}
-                  onClick={() => { setForm((f) => ({ ...f, email: d.email, password: d.password })); setErr(""); }}
-                  className="flex items-center justify-between rounded-lg border border-mist-100/12 bg-ink-800/70 px-3.5 py-2.5 text-left text-[13px] transition-all hover:border-pulse-400/50"
-                >
-                  <span className="font-semibold text-mist-100">{d.label}</span>
-                  <span className="num text-[11.5px] text-mist-500">{d.email}</span>
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
 
@@ -111,17 +95,6 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
           <p className="eyebrow mb-3">{mode === "login" ? "Log in" : mode === "register" ? "Sign up" : "Recovery"}</p>
           <h1 className="font-display text-3xl font-bold tracking-tight">{TITLES[mode].t}</h1>
           <p className="mt-2 text-sm leading-relaxed text-mist-400">{TITLES[mode].s}</p>
-
-          {mode !== "forgot" && (
-            <div className="mb-6 mt-5 grid gap-2 sm:hidden">
-              {DEMO_ACCOUNTS.map((d) => (
-                <button key={d.email} onClick={() => setForm((f) => ({ ...f, email: d.email, password: d.password }))}
-                  className="flex items-center justify-between rounded-lg border border-mist-100/12 bg-ink-900 px-3.5 py-2.5 text-[13px]">
-                  <span className="font-semibold">{d.label}</span><span className="num text-[11px] text-mist-500">{d.email}</span>
-                </button>
-              ))}
-            </div>
-          )}
 
           <div className="card mt-6 space-y-4 p-6">
             {mode === "register" && (

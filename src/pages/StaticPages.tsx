@@ -43,7 +43,6 @@ export function AboutPage() {
                   <p className="mt-1 text-[11.5px] font-semibold uppercase tracking-[0.16em] text-mist-500">{s.l}</p>
                 </div>
               ))}
-              <p className="col-span-2 text-[10.5px] text-mist-500">Live demo dataset — honest about being a demo.</p>
             </div>
           </Reveal>
         </div>
