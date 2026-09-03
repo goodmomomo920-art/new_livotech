@@ -170,7 +170,7 @@ export function Toggle({ on, onChange, disabled }: { on: boolean; onChange: (v: 
       onClick={() => onChange(!on)}
       className={`relative h-6 w-11 shrink-0 rounded-full border transition-colors duration-200 ${on ? "bg-pulse-500 border-pulse-400/70" : "bg-ink-700 border-mist-100/15"} ${disabled ? "opacity-40 pointer-events-none" : ""}`}
     >
-      <span className={`absolute top-0.5 size-[18px] rounded-full bg-ink-950 shadow transition-transform duration-200 ${on ? "translate-x-[22px]" : "translate-x-0.5"}`} />
+      <span className={`absolute left-0.5 top-0.5 size-[18px] rounded-full bg-ink-950 shadow transition-transform duration-200 ${on ? "translate-x-[22px]" : "translate-x-0"}`} />
     </button>
   );
 }

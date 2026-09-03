@@ -52,7 +52,7 @@ export function AdminAddons() {
                     </div>
                     <p className="mt-2 text-[11px] text-mist-500">Types: {a.compat.map((c) => TYPE_META[c].label).join(", ")}</p>
                     <div className="mt-auto flex items-center gap-2 pt-4">
-                      <Toggle on={a.active} onChange={async (v) => { await saveAddon({ ...a, active: v }); toast("success", v ? "Add-on activated" : "Add-on archived", a.name); }} />
+                      <Toggle on={a.active} onChange={async (v) => { try { await saveAddon({ ...a, active: v }); toast("success", v ? "Add-on activated" : "Add-on archived", a.name); } catch (e) { toast("error", "Couldn't update add-on", e instanceof Error ? e.message : "Try again."); } }} />
                       <Btn size="sm" variant="ghost" icon="edit" onClick={() => setEditing(a)}>Edit & link</Btn>
                       <Btn size="sm" variant="ghost" icon="trash" className="ml-auto !text-flare-300" onClick={() => setDeleting(a.id)} aria-label={`Delete ${a.name}`} />
                     </div>
@@ -64,7 +64,7 @@ export function AdminAddons() {
         </div>
       )}
 
-      {editing && <AddonForm addon={editing} onClose={() => setEditing(null)} onSave={async (a) => { await saveAddon(a); setEditing(null); toast("success", "Add-on saved", `${a.name} — linked to ${a.productIds.length} product(s).`); }} />}
+      {editing && <AddonForm addon={editing} onClose={() => setEditing(null)} onSave={async (a) => { try { await saveAddon(a); setEditing(null); toast("success", "Add-on saved", `${a.name} — linked to ${a.productIds.length} product(s).`); } catch (e) { toast("error", "Couldn't save add-on", e instanceof Error ? e.message : "Try again."); } }} />}
 
       <Confirm open={!!deleting} onClose={() => setDeleting(null)} title="Delete this add-on?"
         body="Customers who already attached it keep their billing record, but it disappears from the catalog. Audited."
@@ -306,7 +306,7 @@ export function AdminOrders() {
         footer={detail && can("orders") ? (
           <>
             <Select value={detail.status} className="!w-auto" aria-label="Set order status"
-              onChange={async (e) => { const s = e.target.value as Order["status"]; await setOrderStatus(detail.id, s); setDetail({ ...detail, status: s }); toast("success", "Order updated", `${detail.number} → ${s}`); }}>
+              onChange={async (e) => { const s = e.target.value as Order["status"]; try { await setOrderStatus(detail.id, s); setDetail({ ...detail, status: s }); toast("success", "Order updated", `${detail.number} → ${s}`); } catch (err) { toast("error", "Couldn't update order", err instanceof Error ? err.message : "Try again."); } }}>
               {["pending", "processing", "completed", "cancelled", "refunded"].map((s) => <option key={s} value={s}>{s}</option>)}
             </Select>
             <Btn variant="ghost" onClick={() => setDetail(null)}>Close</Btn>
@@ -383,7 +383,7 @@ export function AdminSubscriptions() {
                       <td className="px-5 py-3.5"><StatusBadge status={s.status} /></td>
                       <td className="px-5 py-3.5">
                         <Select value={s.status} className="!w-auto !py-1.5 text-[12px]" aria-label={`Set status for ${s.plan}`}
-                          onChange={async (e) => { const v = e.target.value as typeof s.status; await setSubStatus(s.id, v); toast("success", "Subscription updated", `${s.plan} → ${v.replace("_", " ")}`); }}>
+                          onChange={async (e) => { const v = e.target.value as typeof s.status; try { await setSubStatus(s.id, v); toast("success", "Subscription updated", `${s.plan} → ${v.replace("_", " ")}`); } catch (err) { toast("error", "Couldn't update subscription", err instanceof Error ? err.message : "Try again."); } }}>
                           {["trial", "active", "past_due", "paused", "cancelled", "expired"].map((v) => <option key={v} value={v}>{v.replace("_", " ")}</option>)}
                         </Select>
                       </td>
@@ -516,7 +516,7 @@ export function AdminCoupons() {
                   <p className="text-[13.5px] font-semibold">{c.kind === "percent" ? `${c.value}% off` : `${money(c.value)} off`}{c.maxDiscount ? ` · cap ${money(c.maxDiscount)}` : ""}{c.minOrder > 0 ? ` · min ${money(c.minOrder)}` : ""}</p>
                   <p className="num text-[11.5px] text-mist-500">{c.used}/{c.usageLimit} used · {c.perCustomer}/customer · expires {fmtDate(c.expiresAt)}{expired ? " · expired" : ""}</p>
                 </div>
-                <Toggle on={c.active} onChange={async (v) => { await saveCoupon({ ...c, active: v }); toast("success", v ? "Coupon activated" : "Coupon deactivated", c.code); }} />
+                <Toggle on={c.active} onChange={async (v) => { try { await saveCoupon({ ...c, active: v }); toast("success", v ? "Coupon activated" : "Coupon deactivated", c.code); } catch (e) { toast("error", "Couldn't update coupon", e instanceof Error ? e.message : "Try again."); } }} />
                 <Btn size="sm" variant="ghost" icon="edit" onClick={() => setEditing(c)} aria-label={`Edit ${c.code}`} />
                 <Btn size="sm" variant="ghost" icon="trash" className="!text-flare-300" onClick={() => setDeleting(c.code)} aria-label={`Delete ${c.code}`} />
               </div>
@@ -531,8 +531,10 @@ export function AdminCoupons() {
             <Btn variant="ghost" onClick={() => setEditing(null)}>Cancel</Btn>
             <Btn icon="check" onClick={async () => {
               if (editing.code.trim().length < 3) return;
-              await saveCoupon({ ...editing, code: editing.code.trim().toUpperCase() });
-              setEditing(null); toast("success", "Coupon saved", editing.code.toUpperCase());
+              try {
+                await saveCoupon({ ...editing, code: editing.code.trim().toUpperCase() });
+                setEditing(null); toast("success", "Coupon saved", editing.code.toUpperCase());
+              } catch (e) { toast("error", "Couldn't save coupon", e instanceof Error ? e.message : "Try again."); }
             }}>Save coupon</Btn>
           </>}>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -553,7 +555,7 @@ export function AdminCoupons() {
       )}
 
       <Confirm open={!!deleting} onClose={() => setDeleting(null)} title="Delete coupon?" body="Existing orders keep their discount snapshot. The code stops working immediately."
-        confirmLabel="Delete" onConfirm={async () => { if (deleting) await deleteCoupon(deleting); }} />
+        confirmLabel="Delete" onConfirm={async () => { if (deleting) { try { await deleteCoupon(deleting); toast("info", "Coupon deleted", deleting); } catch (e) { toast("error", "Couldn't delete coupon", e instanceof Error ? e.message : "Try again."); } } }} />
     </AdminShell>
   );
 }
@@ -721,8 +723,12 @@ export function AdminNotifications() {
               <Field label="Message"><TextArea value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} placeholder="Three new products, add-ons from $5/mo…" /></Field>
               <Btn icon="send" loading={busy} onClick={async () => {
                 if (form.title.trim().length < 4 || form.body.trim().length < 8) { toast("error", "Too short", "Give the broadcast a real title and body."); return; }
-                setBusy(true); await broadcast(form.title.trim(), form.body.trim()); setBusy(false);
-                setForm({ title: "", body: "" }); toast("success", "Broadcast sent", `Delivered to ${state.users.filter((u) => u.role === "customer").length} customers.`);
+                setBusy(true);
+                try {
+                  await broadcast(form.title.trim(), form.body.trim());
+                  setForm({ title: "", body: "" }); toast("success", "Broadcast sent", `Delivered to ${state.users.filter((u) => u.role === "customer").length} customers.`);
+                } catch (e) { toast("error", "Couldn't send broadcast", e instanceof Error ? e.message : "Try again."); }
+                setBusy(false);
               }}>Send broadcast</Btn>
             </div>
           </div>
@@ -786,7 +792,7 @@ export function AdminStaff() {
                 <td className="px-5 py-3.5">
                   {me?.role === "superadmin" && u.id !== me.id ? (
                     <Select value={u.role} className="!w-auto !py-1.5 text-[12px]" aria-label={`Role for ${u.name}`}
-                      onChange={async (e) => { await setUserRole(u.id, e.target.value as typeof u.role); toast("success", "Role changed", `${u.name} → ${e.target.value}`); }}>
+                      onChange={async (e) => { try { await setUserRole(u.id, e.target.value as typeof u.role); toast("success", "Role changed", `${u.name} → ${e.target.value}`); } catch (err) { toast("error", "Couldn't change role", err instanceof Error ? err.message : "Try again."); } }}>
                       <option value="admin">admin</option><option value="superadmin">superadmin</option>
                     </Select>
                   ) : (
@@ -798,8 +804,8 @@ export function AdminStaff() {
                 <td className="px-5 py-3.5 text-right">
                   {me?.role === "superadmin" && u.id !== me.id && (
                     u.status === "active"
-                      ? <Btn size="sm" variant="danger" onClick={async () => { await setUserStatus(u.id, "suspended"); toast("info", "Staff suspended", u.name); }}>Suspend</Btn>
-                      : <Btn size="sm" variant="outline" onClick={async () => { await setUserStatus(u.id, "active"); toast("success", "Staff reactivated", u.name); }}>Reactivate</Btn>
+                      ? <Btn size="sm" variant="danger" onClick={async () => { try { await setUserStatus(u.id, "suspended"); toast("info", "Staff suspended", u.name); } catch (e) { toast("error", "Couldn't suspend", e instanceof Error ? e.message : "Try again."); } }}>Suspend</Btn>
+                      : <Btn size="sm" variant="outline" onClick={async () => { try { await setUserStatus(u.id, "active"); toast("success", "Staff reactivated", u.name); } catch (e) { toast("error", "Couldn't reactivate", e instanceof Error ? e.message : "Try again."); } }}>Reactivate</Btn>
                   )}
                 </td>
               </tr>
@@ -867,7 +873,7 @@ export function AdminRoles() {
                     <td key={role} className="px-5 py-3 text-center">
                       <button
                         disabled={me?.role !== "superadmin"}
-                        onClick={async () => { await togglePerm(role, p); toast("success", "Permission updated", `${role} · ${p} → ${on ? "revoked" : "granted"}`); }}
+                        onClick={async () => { try { await togglePerm(role, p); toast("success", "Permission updated", `${role} · ${p} → ${on ? "revoked" : "granted"}`); } catch (e) { toast("error", "Couldn't update permission", e instanceof Error ? e.message : "Try again."); } }}
                         aria-label={`${role} ${p} ${on ? "granted" : "revoked"}`}
                         className={`grid size-6 place-items-center rounded-md border transition-all disabled:cursor-not-allowed ${on ? "border-pulse-400/60 bg-pulse-400 text-ink-950" : "border-mist-100/20 text-transparent hover:border-mist-100/40"}`}
                       >
@@ -925,7 +931,12 @@ export function AdminSettings() {
               <div><p className="text-[13.5px] font-semibold">Maintenance mode</p><p className="text-[11.5px] text-mist-500">Pauses new purchases; dashboards stay open.</p></div>
               <Toggle on={f.maintenance} onChange={(v) => setF({ ...f, maintenance: v })} />
             </div>
-            <Btn icon="check" loading={busy} onClick={async () => { setBusy(true); await saveSettings(f); setBusy(false); toast("success", "Settings saved", "Live across the whole platform."); }}>Save settings</Btn>
+            <Btn icon="check" loading={busy} onClick={async () => {
+              setBusy(true);
+              try { await saveSettings(f); toast("success", "Settings saved", "Live across the whole platform."); }
+              catch (e) { toast("error", "Couldn't save settings", e instanceof Error ? e.message : "Try again."); }
+              setBusy(false);
+            }}>Save settings</Btn>
           </div>
         </Reveal>
         <div className="space-y-6">

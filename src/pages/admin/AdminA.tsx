@@ -162,14 +162,14 @@ export function AdminOverview() {
   const maxW = Math.max(1, ...weeks.map((w) => w.total));
 
   const kpis = [
-    { icon: "users", label: "Customers", val: customers.length, to: "/admin/customers", tone: "text-pulse-300 border-pulse-400/30 bg-pulse-400/10" },
-    { icon: "refresh", label: "Active subs", val: state.subscriptions.filter((s) => s.status === "active").length, to: "/admin/subscriptions", tone: "text-wave-300 border-wave-400/30 bg-wave-400/10" },
-    { icon: "receipt", label: "Orders", val: state.orders.length, to: "/admin/orders", tone: "text-solar-300 border-solar-400/30 bg-solar-400/10" },
-    { icon: "card", label: "Revenue", val: money(revenue), to: "/admin/payments", tone: "text-flare-300 border-flare-500/30 bg-flare-500/10" },
-    { icon: "box", label: "Live products", val: state.products.filter((p) => p.active).length, to: "/admin/products", tone: "text-pulse-300 border-pulse-400/30 bg-pulse-400/10" },
-    { icon: "globe", label: "Websites", val: state.websites.length, to: "/admin/websites", tone: "text-wave-300 border-wave-400/30 bg-wave-400/10" },
-    { icon: "download", label: "Downloads", val: state.downloads.length, to: "/admin/downloads", tone: "text-solar-300 border-solar-400/30 bg-solar-400/10" },
-    { icon: "headset", label: "Open tickets", val: openTickets.length, to: "/admin/support", tone: "text-flare-300 border-flare-500/30 bg-flare-500/10" },
+    { icon: "users", label: "Customers", val: customers.length, to: "/admin/customers", tone: "text-pulse-300 border-pulse-400/45 bg-pulse-400/15" },
+    { icon: "refresh", label: "Active subs", val: state.subscriptions.filter((s) => s.status === "active").length, to: "/admin/subscriptions", tone: "text-wave-300 border-wave-400/45 bg-wave-400/15" },
+    { icon: "receipt", label: "Orders", val: state.orders.length, to: "/admin/orders", tone: "text-solar-300 border-solar-400/45 bg-solar-400/15" },
+    { icon: "card", label: "Revenue", val: money(revenue), to: "/admin/payments", tone: "text-flare-300 border-flare-500/45 bg-flare-500/15" },
+    { icon: "box", label: "Live products", val: state.products.filter((p) => p.active).length, to: "/admin/products", tone: "text-pulse-300 border-pulse-400/45 bg-pulse-400/15" },
+    { icon: "globe", label: "Websites", val: state.websites.length, to: "/admin/websites", tone: "text-wave-300 border-wave-400/45 bg-wave-400/15" },
+    { icon: "download", label: "Downloads", val: state.downloads.length, to: "/admin/downloads", tone: "text-solar-300 border-solar-400/45 bg-solar-400/15" },
+    { icon: "headset", label: "Open tickets", val: openTickets.length, to: "/admin/support", tone: "text-flare-300 border-flare-500/45 bg-flare-500/15" },
   ];
 
   return (
@@ -178,7 +178,7 @@ export function AdminOverview() {
         {kpis.map((k) => (
           <StaggerItem key={k.label}>
             <Link to={k.to} className="card card-hover group p-4">
-              <span className={`mb-3 grid size-9 place-items-center rounded-lg border ${k.tone}`}><I name={k.icon} size={16} /></span>
+              <span className={`mb-3 grid size-10 place-items-center rounded-lg border ${k.tone}`}><I name={k.icon} size={18} /></span>
               <p className="num text-2xl font-bold text-mist-100">{k.val}</p>
               <p className="mt-0.5 text-[11.5px] font-semibold text-mist-500">{k.label}</p>
             </Link>
@@ -347,9 +347,9 @@ export function AdminCustomers() {
                         <div className="flex justify-end gap-2">
                           <Btn size="sm" variant="ghost" icon="eye" onClick={() => setInspecting(u.id)}>Inspect</Btn>
                           {u.status === "active" ? (
-                            <Btn size="sm" variant="danger" onClick={async () => { await setUserStatus(u.id, "suspended"); toast("info", "Customer suspended", `${u.name} can no longer log in. Audited.`); }}>Suspend</Btn>
+                            <Btn size="sm" variant="danger" onClick={async () => { try { await setUserStatus(u.id, "suspended"); toast("info", "Customer suspended", `${u.name} can no longer log in. Audited.`); } catch (e) { toast("error", "Couldn't suspend", e instanceof Error ? e.message : "Try again."); } }}>Suspend</Btn>
                           ) : (
-                            <Btn size="sm" variant="outline" onClick={async () => { await setUserStatus(u.id, "active"); toast("success", "Customer reactivated", u.name); }}>Activate</Btn>
+                            <Btn size="sm" variant="outline" onClick={async () => { try { await setUserStatus(u.id, "active"); toast("success", "Customer reactivated", u.name); } catch (e) { toast("error", "Couldn't reactivate", e instanceof Error ? e.message : "Try again."); } }}>Activate</Btn>
                           )}
                         </div>
                       </td>
@@ -475,8 +475,8 @@ export function AdminProducts() {
                       <td className="px-5 py-3 text-mist-400">{TYPE_META[p.type].label}</td>
                       <td className="num px-5 py-3 font-semibold">{p.billing === "subscription" ? `${money(p.monthlyPrice ?? p.price)}/mo` : money(p.price)}</td>
                       <td className="num px-5 py-3">{owners}</td>
-                      <td className="px-5 py-3"><Toggle on={p.active} onChange={async (v) => { await saveProduct({ ...p, active: v }); toast("success", v ? "Product activated" : "Product archived", p.name); }} /></td>
-                      <td className="px-5 py-3"><Toggle on={p.featured} onChange={async (v) => { await saveProduct({ ...p, featured: v }); toast("success", v ? "Featured on homepage" : "Removed from featured", p.name); }} /></td>
+                      <td className="px-5 py-3"><Toggle on={p.active} onChange={async (v) => { try { await saveProduct({ ...p, active: v }); toast("success", v ? "Product activated" : "Product archived", p.name); } catch (e) { toast("error", "Couldn't update product", e instanceof Error ? e.message : "Try again."); } }} /></td>
+                      <td className="px-5 py-3"><Toggle on={p.featured} onChange={async (v) => { try { await saveProduct({ ...p, featured: v }); toast("success", v ? "Featured on homepage" : "Removed from featured", p.name); } catch (e) { toast("error", "Couldn't update product", e instanceof Error ? e.message : "Try again."); } }} /></td>
                       <td className="px-5 py-3">
                         <div className="flex justify-end gap-1">
                           <Btn size="sm" variant="ghost" icon="edit" onClick={() => setEditing(p)} aria-label={`Edit ${p.name}`} />
@@ -498,7 +498,7 @@ export function AdminProducts() {
         <ProductForm
           product={editing}
           onClose={() => setEditing(null)}
-          onSave={async (p) => { await saveProduct(p); setEditing(null); toast("success", "Product saved", p.name); }}
+          onSave={async (p) => { try { await saveProduct(p); setEditing(null); toast("success", "Product saved", p.name); } catch (e) { toast("error", "Couldn't save product", e instanceof Error ? e.message : "Try again."); } }}
         />
       )}
 
@@ -638,7 +638,7 @@ export function AdminCategories() {
                   </div>
                   <p className="mt-0.5 line-clamp-1 text-[12.5px] text-mist-400">{c.description}</p>
                 </div>
-                <Toggle on={c.active} onChange={async (v) => { await saveCategory({ ...c, active: v }); toast("success", v ? "Category activated" : "Category hidden", c.name); }} />
+                <Toggle on={c.active} onChange={async (v) => { try { await saveCategory({ ...c, active: v }); toast("success", v ? "Category activated" : "Category hidden", c.name); } catch (e) { toast("error", "Couldn't update category", e instanceof Error ? e.message : "Try again."); } }} />
                 <Btn size="sm" variant="ghost" icon="edit" onClick={() => setEditing(c)} aria-label={`Edit ${c.name}`} />
                 <Btn size="sm" variant="ghost" icon="trash" className="!text-flare-300" aria-label={`Delete ${c.name}`}
                   onClick={async () => {
@@ -657,8 +657,10 @@ export function AdminCategories() {
             <Btn variant="ghost" onClick={() => setEditing(null)}>Cancel</Btn>
             <Btn icon="check" onClick={async () => {
               if (editing.name.trim().length < 2) return;
-              await saveCategory({ ...editing, name: editing.name.trim(), slug: editing.slug || editing.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") });
-              setEditing(null); toast("success", "Category saved", editing.name);
+              try {
+                await saveCategory({ ...editing, name: editing.name.trim(), slug: editing.slug || editing.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") });
+                setEditing(null); toast("success", "Category saved", editing.name);
+              } catch (e) { toast("error", "Couldn't save category", e instanceof Error ? e.message : "Try again."); }
             }}>Save</Btn>
           </>}>
           <div className="space-y-4">

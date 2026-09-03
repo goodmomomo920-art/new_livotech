@@ -62,7 +62,7 @@ interface StoreCtx {
   duplicateProduct: (id: string) => Promise<Product>;
   saveCategory: (c: Category) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
-  moveCategory: (id: string, dir: -1 | 1) => void;
+  moveCategory: (id: string, dir: -1 | 1) => Promise<void>;
   saveAddon: (a: Addon) => Promise<void>;
   deleteAddon: (id: string) => Promise<void>;
   setOrderStatus: (id: string, status: Order["status"], paymentStatus?: Order["paymentStatus"]) => Promise<void>;
@@ -84,6 +84,12 @@ function must<T>(res: { data: T | null; error: { message: string } | null }): T 
   if (res.error) throw new Error(res.error.message);
   if (res.data === null) throw new Error("No data returned.");
   return res.data;
+}
+
+/** Throws if a write call (update/insert/delete with no .select()) came back with an error.
+ *  Without this, a blocked/failed write silently does nothing while the UI still shows "success". */
+function check(res: { error: { message: string } | null }): void {
+  if (res.error) throw new Error(res.error.message);
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
@@ -297,28 +303,28 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }).select("*").single());
     }
     if (!ownedBase) {
-      await supabase.from("ownerships").insert({
+      check(await supabase.from("ownerships").insert({
         customerId: me.id, productId: product.id, orderId: order.id, status: "active",
         activatedAt: now(), expiresAt: sub?.nextBillingAt, subscriptionId: sub?.id,
-      });
+      }));
     }
     for (const ad of addons) {
-      await supabase.from("customer_addons").insert({
+      check(await supabase.from("customer_addons").insert({
         customerId: me.id, addonId: ad.id, attachedProductId: product.id, attachedProductName: product.name,
         orderId: order.id, interval: ad.interval, price: ad.price, status: "active",
         renewsAt: ad.interval === "monthly" ? new Date(Date.now() + 30 * 864e5).toISOString() : null,
-      });
+      }));
       if (ad.interval === "monthly") {
-        await supabase.from("subscriptions").insert({ customerId: me.id, productId: ad.id, orderId: order.id, plan: ad.name, price: ad.price, interval: "monthly", status: "active", nextBillingAt: new Date(Date.now() + 30 * 864e5).toISOString() });
+        check(await supabase.from("subscriptions").insert({ customerId: me.id, productId: ad.id, orderId: order.id, plan: ad.name, price: ad.price, interval: "monthly", status: "active", nextBillingAt: new Date(Date.now() + 30 * 864e5).toISOString() }));
       }
     }
     if (!ownedBase && product.type === "website") {
       const slugPart = product.slug.split("-")[0];
       const domain = `${slugPart}-${me.id.slice(-4)}.livo.site`;
-      await supabase.from("websites").insert({ name: `${product.name} — ${me.company || me.name}`, productId: product.id, customerId: me.id, domain, url: `https://${domain}`, plan: "Owned license", status: "pending" });
+      check(await supabase.from("websites").insert({ name: `${product.name} — ${me.company || me.name}`, productId: product.id, customerId: me.id, domain, url: `https://${domain}`, plan: "Owned license", status: "pending" }));
     }
-    await supabase.from("notifications").insert({ userId: me.id, title: "Purchase confirmed", body: `Order ${order.number} — ${product.name}.`, kind: "purchase", href: product.downloadable ? "/dashboard/downloads" : "/dashboard/products" });
-    await supabase.from("notifications").insert({ userId: "admin", title: "New order", body: `${me.name} — ${product.name} (${total} ${state.settings.currency})`, kind: "purchase", href: "/admin/orders" });
+    check(await supabase.from("notifications").insert({ userId: me.id, title: "Purchase confirmed", body: `Order ${order.number} — ${product.name}.`, kind: "purchase", href: product.downloadable ? "/dashboard/downloads" : "/dashboard/products" }));
+    check(await supabase.from("notifications").insert({ userId: "admin", title: "New order", body: `${me.name} — ${product.name} (${total} ${state.settings.currency})`, kind: "purchase", href: "/admin/orders" }));
 
     setCart(null);
     await loadUserData(me.id);
@@ -331,8 +337,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!me) throw new Error("You must be logged in.");
     const owns = state.ownerships.some((o) => o.customerId === me.id && o.productId === productId && o.status !== "cancelled");
     if (!owns) throw new Error("You don't have access to this file — purchase the product first.");
-    await supabase.from("downloads").insert({ userId: me.id, productId, fileId, fileName });
-    await supabase.from("notifications").insert({ userId: me.id, title: "Download recorded", body: `${fileName}`, kind: "download", href: "/dashboard/downloads" });
+    check(await supabase.from("downloads").insert({ userId: me.id, productId, fileId, fileName }));
+    check(await supabase.from("notifications").insert({ userId: me.id, title: "Download recorded", body: `${fileName}`, kind: "download", href: "/dashboard/downloads" }));
 
     const product = state.products.find((p) => p.id === productId);
     const body = [
@@ -354,7 +360,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       number: "", customerId: me.id, subject, category, priority: "normal", status: "open",
       messages: [{ id: crypto.randomUUID(), author: "customer", authorName: me.name, body, at: now() }],
     }).select("*").single());
-    await supabase.from("notifications").insert({ userId: "admin", title: `New ticket ${ticket.number}`, body: `${me.name}: ${subject}`, kind: "support", href: "/admin/support" });
+    check(await supabase.from("notifications").insert({ userId: "admin", title: `New ticket ${ticket.number}`, body: `${me.name}: ${subject}`, kind: "support", href: "/admin/support" }));
     await loadUserData(me.id);
     return ticket as Ticket;
   }, [me, loadUserData]);
@@ -364,26 +370,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!t) return;
     const messages = [...t.messages, { id: crypto.randomUUID(), author, authorName, body, at: now() }];
     const status = author === "support" ? "waiting" : t.status === "waiting" ? "open" : t.status;
-    await supabase.from("tickets").update({ messages, status }).eq("id", ticketId);
+    check(await supabase.from("tickets").update({ messages, status }).eq("id", ticketId));
     const n = author === "support"
       ? { userId: t.customerId, title: `New reply on ${t.number}`, body: `${authorName} replied.`, kind: "support" as const, href: "/dashboard/support" }
       : { userId: "admin", title: `Customer replied on ${t.number}`, body: `${authorName}: ${body.slice(0, 90)}`, kind: "support" as const, href: "/admin/support" };
-    await supabase.from("notifications").insert(n);
+    check(await supabase.from("notifications").insert(n));
     if (me) await loadUserData(me.id);
   }, [state.tickets, me, loadUserData]);
 
   const setTicketStatus = useCallback(async (ticketId: string, status: Ticket["status"]) => {
-    await supabase.from("tickets").update({ status }).eq("id", ticketId);
+    check(await supabase.from("tickets").update({ status }).eq("id", ticketId));
     if (me) await loadUserData(me.id);
   }, [me, loadUserData]);
 
   const markNotif = useCallback((id: string) => {
     setState((s) => ({ ...s, notifications: s.notifications.map((n) => (n.id === id ? { ...n, read: true } : n)) }));
-    supabase.from("notifications").update({ read: true }).eq("id", id);
+    supabase.from("notifications").update({ read: true }).eq("id", id).then(({ error }) => { if (error) console.error("markNotif failed:", error.message); });
   }, []);
   const markAllNotifs = useCallback((userId: string) => {
     setState((s) => ({ ...s, notifications: s.notifications.map((n) => (n.userId === userId ? { ...n, read: true } : n)) }));
-    supabase.from("notifications").update({ read: true }).eq("userId", userId);
+    supabase.from("notifications").update({ read: true }).eq("userId", userId).then(({ error }) => { if (error) console.error("markAllNotifs failed:", error.message); });
   }, []);
 
   const cancelSubscription = useCallback(async (subId: string) => {
@@ -401,7 +407,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   };
   const logAudit = async (action: string, resource: string, resourceId: string, meta?: string) => {
     if (!me) return;
-    await supabase.from("audit_logs").insert({ actorId: me.id, actorName: me.name, action, resource, resourceId, meta });
+    const { error } = await supabase.from("audit_logs").insert({ actorId: me.id, actorName: me.name, action, resource, resourceId, meta });
+    if (error) console.error("audit log failed:", error.message); // don't block the user's action over a logging failure
   };
 
   const saveProduct = useCallback(async (p: Product) => {
@@ -409,15 +416,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const exists = state.products.some((x) => x.id === p.id);
     const slug = p.slug || p.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
     const row: any = { ...p, slug, updatedAt: now() };
-    if (exists) await supabase.from("products").update(row).eq("id", p.id);
-    else { delete row.id; await supabase.from("products").insert(row); }
+    if (exists) check(await supabase.from("products").update(row).eq("id", p.id));
+    else { delete row.id; check(await supabase.from("products").insert(row)); }
     await logAudit(exists ? "product.update" : "product.create", "product", p.id, p.name);
     await loadPublicData();
   }, [state.products, me, can, loadPublicData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const deleteProduct = useCallback(async (id: string) => {
     requirePerm("products");
-    await supabase.from("products").delete().eq("id", id);
+    check(await supabase.from("products").delete().eq("id", id));
     await logAudit("product.delete", "product", id);
     await loadPublicData();
   }, [me, can, loadPublicData]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -437,8 +444,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const saveCategory = useCallback(async (c: Category) => {
     requirePerm("categories");
     const exists = state.categories.some((x) => x.id === c.id);
-    if (exists) await supabase.from("categories").update(c).eq("id", c.id);
-    else { const row: any = { ...c }; delete row.id; await supabase.from("categories").insert(row); }
+    if (exists) check(await supabase.from("categories").update(c).eq("id", c.id));
+    else { const row: any = { ...c }; delete row.id; check(await supabase.from("categories").insert(row)); }
     await logAudit("category.save", "category", c.id, c.name);
     await loadPublicData();
   }, [state.categories, me, can, loadPublicData]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -446,33 +453,40 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const deleteCategory = useCallback(async (id: string) => {
     requirePerm("categories");
     if (state.products.some((p) => p.categoryId === id)) throw new Error("Category has products — move them first.");
-    await supabase.from("categories").delete().eq("id", id);
+    check(await supabase.from("categories").delete().eq("id", id));
     await logAudit("category.delete", "category", id);
     await loadPublicData();
   }, [state.products, me, can, loadPublicData]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const moveCategory = useCallback((id: string, dir: -1 | 1) => {
+  const moveCategory = useCallback(async (id: string, dir: -1 | 1) => {
     const sorted = [...state.categories].sort((a, b) => a.order - b.order);
     const i = sorted.findIndex((c) => c.id === id);
     const j = i + dir;
     if (i < 0 || j < 0 || j >= sorted.length) return;
     [sorted[i], sorted[j]] = [sorted[j], sorted[i]];
-    sorted.forEach((c, k) => { supabase.from("categories").update({ order: k + 1 }).eq("id", c.id); });
-    setState((s) => ({ ...s, categories: sorted.map((c, k) => ({ ...c, order: k + 1 })) }));
-  }, [state.categories]);
+    const reordered = sorted.map((c, k) => ({ ...c, order: k + 1 }));
+    const prev = state.categories;
+    setState((s) => ({ ...s, categories: reordered }));
+    try {
+      await Promise.all(reordered.map(async (c) => check(await supabase.from("categories").update({ order: c.order }).eq("id", c.id))));
+    } catch (e) {
+      setState((s) => ({ ...s, categories: prev })); // roll back the optimistic reorder if the save failed
+      toast("error", "Couldn't reorder categories", e instanceof Error ? e.message : "Try again.");
+    }
+  }, [state.categories, toast]);
 
   const saveAddon = useCallback(async (a: Addon) => {
     requirePerm("addons");
     const exists = state.addons.some((x) => x.id === a.id);
-    if (exists) await supabase.from("addons").update(a).eq("id", a.id);
-    else { const row: any = { ...a }; delete row.id; await supabase.from("addons").insert(row); }
+    if (exists) check(await supabase.from("addons").update(a).eq("id", a.id));
+    else { const row: any = { ...a }; delete row.id; check(await supabase.from("addons").insert(row)); }
     await logAudit("addon.save", "addon", a.id, a.name);
     await loadPublicData();
   }, [state.addons, me, can, loadPublicData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const deleteAddon = useCallback(async (id: string) => {
     requirePerm("addons");
-    await supabase.from("addons").delete().eq("id", id);
+    check(await supabase.from("addons").delete().eq("id", id));
     await logAudit("addon.delete", "addon", id);
     await loadPublicData();
   }, [me, can, loadPublicData]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -480,28 +494,28 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const setOrderStatus = useCallback(async (id: string, status: Order["status"], paymentStatus?: Order["paymentStatus"]) => {
     requirePerm("orders");
     const patch: any = { status }; if (paymentStatus) patch.paymentStatus = paymentStatus;
-    await supabase.from("orders").update(patch).eq("id", id);
+    check(await supabase.from("orders").update(patch).eq("id", id));
     await logAudit("order.status", "order", id, `→ ${status}`);
     if (me) await loadUserData(me.id);
   }, [me, can, loadUserData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const setSubStatus = useCallback(async (id: string, status: Subscription["status"]) => {
     requirePerm("subscriptions");
-    await supabase.from("subscriptions").update({ status }).eq("id", id);
+    check(await supabase.from("subscriptions").update({ status }).eq("id", id));
     await logAudit("subscription.status", "subscription", id, `→ ${status}`);
     if (me) await loadUserData(me.id);
   }, [me, can, loadUserData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const setUserStatus = useCallback(async (id: string, status: User["status"]) => {
     requirePerm("customers");
-    await supabase.from("profiles").update({ status }).eq("id", id);
+    check(await supabase.from("profiles").update({ status }).eq("id", id));
     await logAudit(status === "suspended" ? "customer.suspend" : "customer.activate", "user", id);
     if (me) await loadUserData(me.id);
   }, [me, can, loadUserData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const setUserRole = useCallback(async (id: string, role: Role) => {
     if (!me || me.role !== "superadmin") throw new Error("Only a Super Admin can change roles.");
-    await supabase.from("profiles").update({ role }).eq("id", id);
+    check(await supabase.from("profiles").update({ role }).eq("id", id));
     await logAudit("role.change", "user", id, `→ ${role}`);
     await loadUserData(me.id);
   }, [me, loadUserData]);
@@ -514,22 +528,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const saveCoupon = useCallback(async (c: Coupon) => {
     requirePerm("coupons");
     const exists = state.coupons.some((x) => x.code === c.code);
-    if (exists) await supabase.from("coupons").update(c).eq("code", c.code);
-    else await supabase.from("coupons").insert(c);
+    if (exists) check(await supabase.from("coupons").update(c).eq("code", c.code));
+    else check(await supabase.from("coupons").insert(c));
     await logAudit("coupon.save", "coupon", c.code, `${c.kind} ${c.value}`);
     if (me) await loadUserData(me.id);
   }, [state.coupons, me, can, loadUserData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const deleteCoupon = useCallback(async (code: string) => {
     requirePerm("coupons");
-    await supabase.from("coupons").delete().eq("code", code);
+    check(await supabase.from("coupons").delete().eq("code", code));
     await logAudit("coupon.delete", "coupon", code);
     if (me) await loadUserData(me.id);
   }, [me, can, loadUserData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const saveSettings = useCallback(async (settings: Settings) => {
     requirePerm("settings");
-    await supabase.from("settings").update(settings).eq("id", 1);
+    check(await supabase.from("settings").update(settings).eq("id", 1));
     await logAudit("settings.update", "settings", "platform", settings.brand);
     await loadPublicData();
   }, [me, can, loadPublicData]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -539,7 +553,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const current = state.rolePerms[role] ?? [];
     const has = current.includes(key);
     const next = has ? current.filter((k) => k !== key) : [...current, key];
-    await supabase.from("role_permissions").update({ perms: next }).eq("role", role);
+    check(await supabase.from("role_permissions").update({ perms: next }).eq("role", role));
     await logAudit("permission.toggle", "role", role, key);
     await loadPublicData();
   }, [me, state.rolePerms, loadPublicData]);
@@ -547,7 +561,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const broadcast = useCallback(async (title: string, body: string) => {
     requirePerm("notifications");
     const customers = state.users.filter((u) => u.role === "customer");
-    await supabase.from("notifications").insert(customers.map((u) => ({ userId: u.id, title, body, kind: "system", href: "/dashboard" })));
+    check(await supabase.from("notifications").insert(customers.map((u) => ({ userId: u.id, title, body, kind: "system", href: "/dashboard" }))));
     await logAudit("notification.broadcast", "notification", "all", title);
     if (me) await loadUserData(me.id);
   }, [state.users, me, can, loadUserData]); // eslint-disable-line react-hooks/exhaustive-deps
