@@ -288,36 +288,15 @@ export default function CheckoutPage() {
             <Reveal>
               <div className="card p-6">
                 <p className="mb-4 text-[11.5px] font-bold uppercase tracking-wider text-mist-500">Payment method</p>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {[{ id: "Card", icon: "card", t: "Card", b: "Visa · Mastercard · Meeza" }, { id: "Wallet", icon: "wallet", t: "Wallet", b: "Vodafone Cash · Fawry" }].map((m) => (
-                    <button key={m.id} onClick={() => setMethod(m.id)} aria-pressed={method === m.id}
-                      className={`flex items-center gap-3.5 rounded-xl border p-4 text-left transition-all ${method === m.id ? "border-pulse-400/60 bg-pulse-400/[0.08]" : "border-mist-100/12 hover:border-mist-100/30"}`}>
-                      <span className={`grid size-10 place-items-center rounded-lg border ${method === m.id ? "border-pulse-400/50 text-pulse-300" : "border-mist-100/12 text-mist-400"}`}><I name={m.icon} size={18} /></span>
-                      <span>
-                        <span className="block font-display text-[15px] font-semibold">{m.t}</span>
-                        <span className="text-[12px] text-mist-500">{m.b}</span>
-                      </span>
-                    </button>
-                  ))}
+                <div className="flex items-center gap-3.5 rounded-xl border border-pulse-400/60 bg-pulse-400/[0.08] p-4">
+                  <span className="grid size-10 place-items-center rounded-lg border border-pulse-400/50 text-pulse-300"><I name="card" size={18} /></span>
+                  <span>
+                    <span className="block font-display text-[15px] font-semibold">Card</span>
+                    <span className="text-[12px] text-mist-500">Visa · Mastercard · Meeza</span>
+                  </span>
                 </div>
-                {method === "Card" && (
-                  <div className="mt-5 grid gap-4 sm:grid-cols-[2fr_1fr_1fr]">
-                    <label className="block sm:col-span-3"><span className="mb-1.5 block text-[12.5px] font-semibold text-mist-300">Card number</span>
-                      <input placeholder="4242 4242 4242 4242" className="num w-full rounded-lg border border-mist-100/12 bg-ink-800 px-3.5 py-2.5 text-sm text-mist-100 outline-none focus:border-pulse-400/60" /></label>
-                    <label className="block"><span className="mb-1.5 block text-[12.5px] font-semibold text-mist-300">Expiry</span>
-                      <input placeholder="12/28" className="num w-full rounded-lg border border-mist-100/12 bg-ink-800 px-3.5 py-2.5 text-sm text-mist-100 outline-none focus:border-pulse-400/60" /></label>
-                    <label className="block"><span className="mb-1.5 block text-[12.5px] font-semibold text-mist-300">CVC</span>
-                      <input placeholder="123" className="num w-full rounded-lg border border-mist-100/12 bg-ink-800 px-3.5 py-2.5 text-sm text-mist-100 outline-none focus:border-pulse-400/60" /></label>
-                    <label className="block"><span className="mb-1.5 block text-[12.5px] font-semibold text-mist-300">Name on card</span>
-                      <input placeholder={me.name} className="w-full rounded-lg border border-mist-100/12 bg-ink-800 px-3.5 py-2.5 text-sm text-mist-100 outline-none focus:border-pulse-400/60" /></label>
-                  </div>
-                )}
                 {payErr && <p className="mt-4 flex items-start gap-2 rounded-lg border border-flare-500/35 bg-flare-500/8 px-3.5 py-2.5 text-[13px] text-flare-300"><I name="alert" size={14} className="mt-0.5 shrink-0" /> {payErr}</p>}
-                {method === "Card" ? (
-                  <p className="mt-4 flex items-center gap-2 text-[11.5px] text-mist-500"><I name="lock" size={13} className="text-pulse-400" /> You'll be redirected to Kashier's secure payment page to enter your card.</p>
-                ) : (
-                  <p className="mt-4 flex items-center gap-2 text-[11.5px] text-mist-500"><I name="lock" size={13} className="text-pulse-400" /> No real charge is made — this demo verifies the flow, not your wallet.</p>
-                )}
+                <p className="mt-4 flex items-center gap-2 text-[11.5px] text-mist-500"><I name="lock" size={13} className="text-pulse-400" /> You'll be redirected to Kashier's secure payment page to enter your card.</p>
               </div>
             </Reveal>
           )}
