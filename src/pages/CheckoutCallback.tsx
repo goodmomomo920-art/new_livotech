@@ -12,7 +12,7 @@ type Phase = "waiting" | "paid" | "failed" | "error";
  *  it grants ownership/subscriptions/etc. the same way the old instant-checkout did. */
 export default function CheckoutCallback() {
   usePageTitle("Confirming payment…");
-  const { me, pollOrderPayment, provisionOrder, toast } = useStore();
+  const { me, loading, pollOrderPayment, provisionOrder, toast } = useStore();
   const [params] = useSearchParams();
   const orderId = params.get("orderId");
   const nav = useNavigate();
@@ -23,8 +23,10 @@ export default function CheckoutCallback() {
 
   useEffect(() => {
     if (ran.current) return; // StrictMode/re-render guard — this must run exactly once
+    if (loading) return; // auth session is still hydrating after the redirect-back reload — wait for it
     ran.current = true;
-    if (!orderId || !me) { setPhase("error"); setErr("Missing order — go back to your cart and try again."); return; }
+    if (!orderId) { setPhase("error"); setErr("Missing order — go back to your cart and try again."); return; }
+    if (!me) { setPhase("error"); setErr("You've been signed out — please log in again to confirm this order."); return; }
 
     (async () => {
       try {
@@ -49,7 +51,7 @@ export default function CheckoutCallback() {
         setErr(e instanceof Error ? e.message : "Something went wrong confirming this payment.");
       }
     })();
-  }, [orderId, me, pollOrderPayment, provisionOrder, toast]);
+  }, [orderId, me, loading, pollOrderPayment, provisionOrder, toast]);
 
   if (phase === "waiting") {
     return (
