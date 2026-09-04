@@ -140,17 +140,15 @@ export function OverviewPage() {
           </div>
         </Reveal>
 
-        <Stagger className="mt-6 grid grid-cols-2 items-start gap-4 lg:grid-cols-4">
+        <div className="mt-6 grid grid-cols-2 items-start gap-4 lg:grid-cols-4">
           {stats.map((s) => (
-            <StaggerItem key={s.label}>
-              <Link to={s.to} className="card card-hover group p-5">
-                <span className={`mb-3 grid size-10 place-items-center rounded-lg border ${s.tone}`}><I name={s.icon} size={17} /></span>
-                <p className="num text-3xl font-bold">{s.val}</p>
-                <p className="mt-0.5 text-[12px] font-semibold text-mist-500">{s.label}</p>
-              </Link>
-            </StaggerItem>
+            <Link key={s.label} to={s.to} className="card card-hover group p-5">
+              <span className={`mb-3 grid size-10 place-items-center rounded-lg border ${s.tone}`}><I name={s.icon} size={17} /></span>
+              <p className="num text-3xl font-bold">{s.val}</p>
+              <p className="mt-0.5 text-[12px] font-semibold text-mist-500">{s.label}</p>
+            </Link>
           ))}
-        </Stagger>
+        </div>
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[1.5fr_1fr]">
           <section>
