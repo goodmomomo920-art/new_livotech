@@ -36,9 +36,15 @@ const staggerChild: Variants = {
   show: { opacity: 1, y: 0, transition: { duration: 0.65, ease: EASE } },
 };
 
+/* Stagger/StaggerItem used to gate on scroll (`whileInView`) with a one-shot observer.
+   That's flaky for anything that can mount while already on-screen — the KPI grids
+   in the admin and customer overviews, filtered lists, etc. — leaving items stuck at
+   opacity:0. Rather than keep chasing every place that bites, both now animate in as
+   soon as they mount, everywhere, unconditionally. StaggerNow/StaggerItemNow are kept
+   as aliases so existing imports keep working. */
 export function Stagger({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <motion.div className={className} variants={staggerParent} initial="hidden" whileInView="show" viewport={{ once: true, margin: "-40px" }}>
+    <motion.div className={className} variants={staggerParent} initial="hidden" animate="show">
       {children}
     </motion.div>
   );
@@ -51,25 +57,8 @@ export function StaggerItem({ children, className }: { children: ReactNode; clas
   );
 }
 
-/* Same stagger effect, but animates in as soon as it mounts instead of waiting to
-   scroll into view. Use this for content that re-renders from user interaction
-   (filters, search, tabs) rather than a one-time page-load reveal — whileInView's
-   IntersectionObserver can miss content that mounts while already on-screen with
-   no real scroll happening, leaving it stuck invisible. */
-export function StaggerNow({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <motion.div className={className} variants={staggerParent} initial="hidden" animate="show">
-      {children}
-    </motion.div>
-  );
-}
-export function StaggerItemNow({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <motion.div className={className} variants={staggerChild}>
-      {children}
-    </motion.div>
-  );
-}
+export const StaggerNow = Stagger;
+export const StaggerItemNow = StaggerItem;
 
 /* Animated counter when visible */
 export function Counter({
