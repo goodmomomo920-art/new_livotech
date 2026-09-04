@@ -225,7 +225,7 @@ export function AdminDeployed({ kind }: { kind: "websites" | "systems" | "digita
                     {p.downloadable && <Badge tone="wave">{p.files.length} files</Badge>}
                   </div>
                   <p className="num mt-0.5 text-[11.5px] text-mist-500">
-                    {money(p.billing === "subscription" ? p.monthlyPrice ?? p.price : p.price)}{p.billing === "subscription" ? "/mo" : ""} · {owners} active owner{owners === 1 ? "" : "s"}
+                    {money(p.billing === "subscription" ? p.monthlyPrice ?? p.price : p.price, p.currency)}{p.billing === "subscription" ? "/mo" : ""} · {owners} active owner{owners === 1 ? "" : "s"}
                     {kind === "digital" && ` · ${dls} downloads`} · {linkedAddons} linked add-on{linkedAddons === 1 ? "" : "s"}
                   </p>
                 </div>

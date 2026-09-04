@@ -18,6 +18,7 @@ export interface Product {
   type: ProductType; categoryId: string;
   image: string; gallery: string[];
   price: number; compareAt?: number; monthlyPrice?: number; yearlyPrice?: number;
+  currency: "USD" | "EGP";
   billing: "once" | "subscription";
   rating: number; reviews: number;
   features: string[]; tags: string[]; faqs: ProductFaq[];

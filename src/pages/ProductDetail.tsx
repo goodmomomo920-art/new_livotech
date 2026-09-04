@@ -146,7 +146,7 @@ export default function ProductDetail() {
                       <button key={iv} onClick={() => setInterval(iv)} aria-pressed={interval === iv}
                         className={`rounded-lg border px-3 py-2.5 text-left transition-all duration-200 ${interval === iv ? "border-pulse-400/60 bg-pulse-400/10" : "border-mist-100/12 hover:border-mist-100/30"}`}>
                         <span className={`block text-[11px] font-semibold uppercase tracking-wider ${interval === iv ? "text-pulse-300" : "text-mist-500"}`}>{label}</span>
-                        <span className="num text-[15px] font-bold text-mist-100">{money(p)}</span>
+                        <span className="num text-[15px] font-bold text-mist-100">{money(p, product.currency)}</span>
                       </button>
                     );
                   })}
@@ -164,7 +164,7 @@ export default function ProductDetail() {
                       return (
                         <button key={a.id} onClick={() => setSelectedAddons((s) => (on ? s.filter((x) => x !== a.id) : [...s, a.id]))} aria-pressed={on}
                           className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[12px] font-semibold transition-all duration-200 ${on ? "border-pulse-400/60 bg-pulse-400/10 text-pulse-300" : "border-mist-100/12 text-mist-400 hover:border-mist-100/30"}`}>
-                          <I name={a.icon} size={13} /> {a.name} <span className="num text-mist-500">{money(a.price)}/mo</span>
+                          <I name={a.icon} size={13} /> {a.name} <span className="num text-mist-500">{money(a.price, product.currency)}/mo</span>
                         </button>
                       );
                     })}
@@ -175,7 +175,7 @@ export default function ProductDetail() {
               <div className="flex items-center justify-between border-t border-mist-100/10 pt-4">
                 <span className="text-[13px] text-mist-400">Total {interval !== "once" ? "today" : ""}</span>
                 <span className="num text-2xl font-bold text-mist-100">
-                  {money(total)}{interval !== "once" && <span className="text-sm font-medium text-mist-500"> /{interval === "monthly" ? "mo" : "yr"}</span>}
+                  {money(total, product.currency)}{interval !== "once" && <span className="text-sm font-medium text-mist-500"> /{interval === "monthly" ? "mo" : "yr"}</span>}
                 </span>
               </div>
 

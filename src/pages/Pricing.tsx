@@ -55,10 +55,10 @@ export function PricingPage() {
                   <h3 className="mt-4 font-display text-xl font-bold tracking-tight">{p.name}</h3>
                   <p className="mt-1 line-clamp-2 text-[13px] text-mist-400">{p.tagline}</p>
                   <p className="num mt-5 text-4xl font-bold">
-                    {money(shown)}<span className="text-sm font-medium text-mist-500"> /mo</span>
+                    {money(shown, p.currency)}<span className="text-sm font-medium text-mist-500"> /mo</span>
                   </p>
                   <p className="num mt-1 text-[12px] text-mist-500">
-                    {yearly ? `${money(yr)} billed yearly` : `or ${money(yr)}/yr — save ${money(mo * 12 - yr)}`}
+                    {yearly ? `${money(yr, p.currency)} billed yearly` : `or ${money(yr, p.currency)}/yr — save ${money(mo * 12 - yr, p.currency)}`}
                   </p>
                   <ul className="mt-5 space-y-2 text-[13px] text-mist-300">
                     {p.features.slice(0, 4).map((f) => <li key={f} className="flex gap-2"><I name="check" size={13} className="mt-0.5 shrink-0 text-pulse-400" />{f}</li>)}
@@ -95,12 +95,12 @@ export function PricingPage() {
                         <img src={p.image} alt="" className="h-9 w-12 rounded-md border border-mist-100/12 object-cover object-top" />
                         <span>
                           <span className="block font-display font-semibold text-mist-100">{p.name}</span>
-                          {p.compareAt && <span className="num text-[11px] text-mist-500 line-through">{money(p.compareAt)}</span>}
+                          {p.compareAt && <span className="num text-[11px] text-mist-500 line-through">{money(p.compareAt, p.currency)}</span>}
                         </span>
                       </span>
                     </td>
                     <td className="px-5 py-3.5 text-mist-400">{TYPE_META[p.type].label}</td>
-                    <td className="px-5 py-3.5"><span className="num font-bold text-mist-100">{money(p.price)}</span></td>
+                    <td className="px-5 py-3.5"><span className="num font-bold text-mist-100">{money(p.price, p.currency)}</span></td>
                     <td className="px-5 py-3.5 text-mist-400">{p.downloadable ? "Instant download + guide" : "Deploy in days"}</td>
                     <td className="px-5 py-3.5 text-right">
                       <Link to={`/products/${p.slug}`} className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-pulse-300 hover:text-pulse-400">Details <I name="arrowR" size={13} /></Link>

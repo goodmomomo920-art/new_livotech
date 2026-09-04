@@ -12,6 +12,7 @@ const Home = lazy(() => import("./pages/Home"));
 const CatalogPage = lazy(() => import("./pages/Catalog"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
 const CheckoutPage = lazy(() => import("./pages/Checkout"));
+const CheckoutCallback = lazy(() => import("./pages/CheckoutCallback"));
 const OverviewPage = lazy(() => import("./pages/dashboard/DashboardA").then((m) => ({ default: m.OverviewPage })));
 const OwnedProductsPage = lazy(() => import("./pages/dashboard/DashboardA").then((m) => ({ default: m.OwnedProductsPage })));
 const WebsitesPage = lazy(() => import("./pages/dashboard/DashboardA").then((m) => ({ default: m.WebsitesPage })));
@@ -134,6 +135,7 @@ export default function App() {
               <Route path="/register" element={<AuthPage mode="register" />} />
               <Route path="/forgot-password" element={<AuthPage mode="forgot" />} />
               <Route path="/checkout" element={<CheckoutPage />} />
+              <Route path="/checkout/callback" element={<CheckoutCallback />} />
               <Route path="*" element={<NotFound />} />
             </Route>
 

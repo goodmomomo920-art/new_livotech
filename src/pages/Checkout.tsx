@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useStore, wait } from "../lib/store";
+import { supabase } from "../lib/supabase";
 import { TYPE_META } from "../lib/seed";
 import { I } from "../components/icons";
 import { Badge, Btn, EmptyState, money, usePageTitle } from "../components/ui";
@@ -11,7 +12,7 @@ type Step = "review" | "pay" | "done";
 
 export default function CheckoutPage() {
   usePageTitle("Checkout");
-  const { state, me, setCart, validateCoupon, checkout, recordDownload, toast } = useStore();
+  const { state, me, setCart, validateCoupon, checkout, createPendingOrder, recordDownload, toast } = useStore();
   const nav = useNavigate();
   const cart = state.cart;
   const product = useMemo(() => state.products.find((p) => p.id === cart?.productId) ?? null, [state.products, cart]);
@@ -46,7 +47,7 @@ export default function CheckoutPage() {
     try {
       const v = await validateCoupon(couponInput, subtotal);
       setCoupon({ code: v.code, discount: v.discount });
-      toast("success", `Coupon ${v.code} applied`, `You saved ${money(v.discount)}.`);
+      toast("success", `Coupon ${v.code} applied`, `You saved ${money(v.discount, product?.currency)}.`);
     } catch (e) {
       setCoupon(null);
       setCouponErr(e instanceof Error ? e.message : "Invalid coupon.");
@@ -58,6 +59,20 @@ export default function CheckoutPage() {
   const pay = async () => {
     setPayErr(""); setPaying(true);
     try {
+      if (method === "Card") {
+        const o = await createPendingOrder({ couponCode: coupon?.code, method });
+        const { data, error } = await supabase.functions.invoke("kashier-create-payment", {
+          body: {
+            orderId: o.number,
+            amount: o.total,
+            currency: o.currency,
+            redirectUrl: `${window.location.origin}/#/checkout/callback?orderId=${o.id}`,
+          },
+        });
+        if (error || !data?.redirectUrl) throw new Error(error?.message || "Couldn't start the payment — try again.");
+        window.location.href = data.redirectUrl; // leaves the SPA — Kashier's hosted page takes over from here
+        return;
+      }
       const o = await checkout({ couponCode: coupon?.code, method });
       setOrder(o);
       setStep("done");
@@ -116,16 +131,16 @@ export default function CheckoutPage() {
               {order.items.map((it) => (
                 <div key={it.productId} className="flex items-center justify-between py-1.5 text-[13.5px]">
                   <span className="text-mist-300">{it.name}{it.interval !== "once" && <span className="text-mist-500"> · {it.interval}</span>}</span>
-                  <span className="num font-semibold">{money(it.total)}</span>
+                  <span className="num font-semibold">{money(it.total, p?.currency)}</span>
                 </div>
               ))}
               {order.discount > 0 && (
                 <div className="flex items-center justify-between py-1.5 text-[13.5px] text-solar-300">
-                  <span>Coupon {order.couponCode}</span><span className="num">−{money(order.discount)}</span>
+                  <span>Coupon {order.couponCode}</span><span className="num">−{money(order.discount, p?.currency)}</span>
                 </div>
               )}
               <div className="mt-2 flex items-center justify-between border-t border-mist-100/10 pt-2.5 font-bold">
-                <span>Total paid</span><span className="num text-pulse-300">{money(order.total)}</span>
+                <span>Total paid</span><span className="num text-pulse-300">{money(order.total, p?.currency)}</span>
               </div>
             </div>
 
@@ -229,7 +244,7 @@ export default function CheckoutPage() {
                     {ownedBase ? (
                       <p className="mt-0.5"><Badge tone="pulse" dot>Owned — base not charged</Badge></p>
                     ) : (
-                      <p className="num mt-0.5 text-sm text-mist-300">{money(unit)}{cart.interval !== "once" && <span className="text-mist-500"> /{cart.interval === "monthly" ? "mo" : "yr"}</span>}</p>
+                      <p className="num mt-0.5 text-sm text-mist-300">{money(unit, product?.currency)}{cart.interval !== "once" && <span className="text-mist-500"> /{cart.interval === "monthly" ? "mo" : "yr"}</span>}</p>
                     )}
                   </div>
                   <button onClick={() => { setCart(null); nav("/products"); }} className="shrink-0 rounded-lg p-2 text-mist-500 transition-colors hover:bg-flare-500/10 hover:text-flare-300" aria-label="Remove from cart">
@@ -244,7 +259,7 @@ export default function CheckoutPage() {
                         <div key={a.id} className="flex items-center gap-3.5 rounded-lg border border-mist-100/10 bg-ink-800/60 px-4 py-3">
                           <I name={a.icon} size={17} className="text-solar-300" />
                           <span className="flex-1 text-sm font-semibold">{a.name}</span>
-                          <span className="num text-sm text-mist-300">{money(a.price)}<span className="text-mist-500">{a.interval === "monthly" ? " /mo" : ""}</span></span>
+                          <span className="num text-sm text-mist-300">{money(a.price, product?.currency)}<span className="text-mist-500">{a.interval === "monthly" ? " /mo" : ""}</span></span>
                           <button onClick={() => setCart({ ...cart, addonIds: cart.addonIds.filter((x) => x !== a.id) })} className="text-mist-500 hover:text-flare-300" aria-label={`Remove ${a.name}`}>
                             <I name="close" size={14} />
                           </button>
@@ -261,7 +276,7 @@ export default function CheckoutPage() {
                     <Btn variant="soft" loading={couponBusy} onClick={applyCoupon} icon="tag">Apply</Btn>
                   </div>
                   {couponErr && <p className="mt-2 flex items-center gap-2 text-[12.5px] text-flare-300"><I name="alert" size={13} /> {couponErr}</p>}
-                  {coupon && <p className="mt-2 flex items-center gap-2 text-[12.5px] text-pulse-300"><I name="check" size={13} /> {coupon.code} applied — you save {money(coupon.discount)}</p>}
+                  {coupon && <p className="mt-2 flex items-center gap-2 text-[12.5px] text-pulse-300"><I name="check" size={13} /> {coupon.code} applied — you save {money(coupon.discount, product?.currency)}</p>}
                 </div>
               </div>
               <div className="mt-5 flex items-center gap-3 rounded-xl border border-mist-100/10 bg-ink-900/70 px-5 py-3.5 text-[12.5px] text-mist-400">
@@ -298,7 +313,11 @@ export default function CheckoutPage() {
                   </div>
                 )}
                 {payErr && <p className="mt-4 flex items-start gap-2 rounded-lg border border-flare-500/35 bg-flare-500/8 px-3.5 py-2.5 text-[13px] text-flare-300"><I name="alert" size={14} className="mt-0.5 shrink-0" /> {payErr}</p>}
-                <p className="mt-4 flex items-center gap-2 text-[11.5px] text-mist-500"><I name="lock" size={13} className="text-pulse-400" /> No real charge is made — this demo verifies the flow, not your wallet.</p>
+                {method === "Card" ? (
+                  <p className="mt-4 flex items-center gap-2 text-[11.5px] text-mist-500"><I name="lock" size={13} className="text-pulse-400" /> You'll be redirected to Kashier's secure payment page to enter your card.</p>
+                ) : (
+                  <p className="mt-4 flex items-center gap-2 text-[11.5px] text-mist-500"><I name="lock" size={13} className="text-pulse-400" /> No real charge is made — this demo verifies the flow, not your wallet.</p>
+                )}
               </div>
             </Reveal>
           )}
@@ -313,21 +332,21 @@ export default function CheckoutPage() {
                 {ownedBase ? (
                   <div className="flex justify-between text-mist-500"><span>{product.name} <Badge tone="pulse" className="ml-1">owned</Badge></span><span className="num">—</span></div>
                 ) : (
-                  <div className="flex justify-between text-mist-300"><span>{product.name}{cart.interval !== "once" && <span className="text-mist-500"> · {cart.interval}</span>}</span><span className="num">{money(unit)}</span></div>
+                  <div className="flex justify-between text-mist-300"><span>{product.name}{cart.interval !== "once" && <span className="text-mist-500"> · {cart.interval}</span>}</span><span className="num">{money(unit, product.currency)}</span></div>
                 )}
-                {addons.map((a) => <div key={a.id} className="flex justify-between text-mist-400"><span>{a.name}{a.interval === "monthly" && <span className="text-mist-500"> /mo</span>}</span><span className="num">{money(a.price)}</span></div>)}
-                <div className="flex justify-between border-t border-mist-100/10 pt-2.5 text-mist-300"><span>Subtotal</span><span className="num">{money(subtotal)}</span></div>
-                {discount > 0 && <div className="flex justify-between text-solar-300"><span>Discount ({coupon?.code})</span><span className="num">−{money(discount)}</span></div>}
+                {addons.map((a) => <div key={a.id} className="flex justify-between text-mist-400"><span>{a.name}{a.interval === "monthly" && <span className="text-mist-500"> /mo</span>}</span><span className="num">{money(a.price, product.currency)}</span></div>)}
+                <div className="flex justify-between border-t border-mist-100/10 pt-2.5 text-mist-300"><span>Subtotal</span><span className="num">{money(subtotal, product.currency)}</span></div>
+                {discount > 0 && <div className="flex justify-between text-solar-300"><span>Discount ({coupon?.code})</span><span className="num">−{money(discount, product.currency)}</span></div>}
                 <div className="flex justify-between border-t border-mist-100/10 pt-3 text-base font-bold">
                   <span>Total{ownedBase && addonMonthly && <span className="text-[12px] font-medium text-mist-500"> /mo</span>}{!ownedBase && cart.interval !== "once" && <span className="text-[12px] font-medium text-mist-500"> /{cart.interval === "monthly" ? "mo" : "yr"}</span>}</span>
-                  <span className="num text-pulse-300">{money(total)}</span>
+                  <span className="num text-pulse-300">{money(total, product.currency)}</span>
                 </div>
               </div>
               {step === "review" ? (
                 <Btn size="lg" className="mt-6 w-full" icon="arrowR" onClick={() => setStep("pay")}>Continue to payment</Btn>
               ) : (
                 <div className="mt-6 grid gap-2.5">
-                  <Btn size="lg" className="w-full" icon="bolt" loading={paying} onClick={pay}>{paying ? "Verifying payment…" : `Pay ${money(total)}`}</Btn>
+                  <Btn size="lg" className="w-full" icon="bolt" loading={paying} onClick={pay}>{paying ? "Verifying payment…" : `Pay ${money(total, product.currency)}`}</Btn>
                   <Btn variant="ghost" onClick={() => setStep("review")}>Back to review</Btn>
                 </div>
               )}

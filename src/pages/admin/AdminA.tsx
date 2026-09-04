@@ -426,32 +426,104 @@ export function AdminCustomers() {
 const blankProduct = (categoryId = ""): Product => ({
   id: `p-${Date.now().toString(36)}`, slug: "", name: "", tagline: "", description: "",
   type: "website", categoryId, image: "", gallery: [],
-  price: 99, billing: "once", rating: 4.5, reviews: 0,
+  price: 99, currency: "USD", billing: "once", rating: 4.5, reviews: 0,
   features: [], tags: [], faqs: [], files: [], downloadable: false,
   active: true, featured: false, version: "1.0.0",
   createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
 });
 
+function BulkPriceModal({ count, onClose, onApply }: {
+  count: number;
+  onClose: () => void;
+  onApply: (mode: "set" | "percent" | "add", amount: number, currency?: Product["currency"]) => void | Promise<void>;
+}) {
+  const [mode, setMode] = useState<"set" | "percent" | "add">("percent");
+  const [amount, setAmount] = useState<string>("");
+  const [changeCurrency, setChangeCurrency] = useState(false);
+  const [currency, setCurrency] = useState<Product["currency"]>("USD");
+  const [busy, setBusy] = useState(false);
+
+  const n = Number(amount);
+  const valid = amount.trim() !== "" && !Number.isNaN(n) && (mode !== "set" || n >= 0);
+
+  return (
+    <Modal open onClose={onClose} title={`Bulk edit price — ${count} product${count === 1 ? "" : "s"}`}
+      footer={<>
+        <Btn variant="ghost" onClick={onClose}>Cancel</Btn>
+        <Btn icon="check" loading={busy} disabled={!valid} onClick={async () => {
+          setBusy(true);
+          await onApply(mode, n, changeCurrency ? currency : undefined);
+          setBusy(false);
+        }}>Apply to {count} product{count === 1 ? "" : "s"}</Btn>
+      </>}>
+      <div className="space-y-4">
+        <Field label="How to change price">
+          <Select value={mode} onChange={(e) => setMode(e.target.value as typeof mode)}>
+            <option value="percent">Increase / decrease by %</option>
+            <option value="add">Add / subtract a flat amount</option>
+            <option value="set">Set exact price</option>
+          </Select>
+        </Field>
+        <Field label={mode === "percent" ? "Percent (use −10 to lower)" : mode === "add" ? "Amount (use −5 to lower)" : "New price"}>
+          <TextInput type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder={mode === "percent" ? "e.g. 10 for +10%" : mode === "add" ? "e.g. -20" : "e.g. 49"} />
+        </Field>
+        <p className="text-[12.5px] text-mist-500">
+          {mode === "percent" && "Scales each selected product's price (and monthly/yearly/compare-at, where set) by this percentage."}
+          {mode === "add" && "Adds this amount to each selected product's price (and monthly/yearly/compare-at, where set)."}
+          {mode === "set" && "Overwrites the price (and monthly/yearly/compare-at, where set) on every selected product with this exact number — use with care."}
+        </p>
+        <div className="flex items-center justify-between rounded-xl border border-mist-100/10 bg-ink-800/60 px-4 py-3">
+          <div><p className="text-[13.5px] font-semibold">Also change currency</p><p className="text-[11.5px] text-mist-500">Switch all selected products to USD or EGP.</p></div>
+          <Toggle on={changeCurrency} onChange={setChangeCurrency} />
+        </div>
+        {changeCurrency && (
+          <Field label="Currency">
+            <Select value={currency} onChange={(e) => setCurrency(e.target.value as Product["currency"])}>
+              <option value="USD">USD ($)</option>
+              <option value="EGP">EGP (E£)</option>
+            </Select>
+          </Field>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
 export function AdminProducts() {
   usePageTitle("Admin · Products");
-  const { state, can, saveProduct, deleteProduct, duplicateProduct, toast } = useStore();
+  const { state, can, saveProduct, deleteProduct, duplicateProduct, bulkUpdatePrices, toast } = useStore();
   const [q, setQ] = useState("");
   const dq = useDebounced(q).toLowerCase();
   const [editing, setEditing] = useState<Product | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [bulkOpen, setBulkOpen] = useState(false);
 
   const list = state.products.filter((p) => !dq || p.name.toLowerCase().includes(dq) || p.slug.includes(dq));
+  const allChecked = list.length > 0 && list.every((p) => selected.includes(p.id));
+  const toggleAll = () => setSelected(allChecked ? [] : list.map((p) => p.id));
+  const toggleOne = (id: string) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
 
   return (
     <AdminShell title="Products" sub="Create, price, feature, archive — everything is audited"
       actions={can("products") ? <Btn size="sm" icon="plus" onClick={() => setEditing(blankProduct())}>New product</Btn> : undefined}>
       {!can("products") ? <Restricted perm="products" /> : (
         <div className="mx-auto max-w-6xl">
-          <SearchInput value={q} onChange={setQ} placeholder="Search products…" className="mb-5 max-w-sm" />
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <SearchInput value={q} onChange={setQ} placeholder="Search products…" className="max-w-sm" />
+            {selected.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-[12.5px] font-semibold text-mist-400">{selected.length} selected</span>
+                <Btn size="sm" icon="edit" onClick={() => setBulkOpen(true)}>Bulk edit price</Btn>
+                <Btn size="sm" variant="ghost" onClick={() => setSelected([])}>Clear</Btn>
+              </div>
+            )}
+          </div>
           <div className="overflow-x-auto rounded-xl border border-mist-100/10">
-            <table className="w-full min-w-[760px] text-left text-sm">
+            <table className="w-full min-w-[820px] text-left text-sm">
               <thead>
                 <tr className="border-b border-mist-100/10 bg-ink-800/70 text-[11px] uppercase tracking-wider text-mist-500">
+                  <th className="w-10 px-5 py-3"><input type="checkbox" checked={allChecked} onChange={toggleAll} aria-label="Select all products" /></th>
                   <th className="px-5 py-3 font-semibold">Product</th>
                   <th className="px-5 py-3 font-semibold">Type</th>
                   <th className="px-5 py-3 font-semibold">Price</th>
@@ -466,6 +538,7 @@ export function AdminProducts() {
                   const owners = state.ownerships.filter((o) => o.productId === p.id && o.status === "active").length;
                   return (
                     <tr key={p.id} className={`border-b border-mist-100/6 transition-colors hover:bg-ink-800/50 ${p.active ? "" : "opacity-55"}`}>
+                      <td className="px-5 py-3"><input type="checkbox" checked={selected.includes(p.id)} onChange={() => toggleOne(p.id)} aria-label={`Select ${p.name}`} /></td>
                       <td className="px-5 py-3">
                         <span className="flex items-center gap-3">
                           {p.image ? <img src={p.image} alt="" className="h-9 w-12 rounded-md border border-mist-100/12 object-cover object-top" /> : <span className="grid h-9 w-12 place-items-center rounded-md border border-mist-100/12 bg-ink-800 text-mist-500"><I name="box" size={14} /></span>}
@@ -473,7 +546,7 @@ export function AdminProducts() {
                         </span>
                       </td>
                       <td className="px-5 py-3 text-mist-400">{TYPE_META[p.type].label}</td>
-                      <td className="num px-5 py-3 font-semibold">{p.billing === "subscription" ? `${money(p.monthlyPrice ?? p.price)}/mo` : money(p.price)}</td>
+                      <td className="num px-5 py-3 font-semibold">{p.billing === "subscription" ? `${money(p.monthlyPrice ?? p.price, p.currency)}/mo` : money(p.price, p.currency)}</td>
                       <td className="num px-5 py-3">{owners}</td>
                       <td className="px-5 py-3"><Toggle on={p.active} onChange={async (v) => { try { await saveProduct({ ...p, active: v }); toast("success", v ? "Product activated" : "Product archived", p.name); } catch (e) { toast("error", "Couldn't update product", e instanceof Error ? e.message : "Try again."); } }} /></td>
                       <td className="px-5 py-3"><Toggle on={p.featured} onChange={async (v) => { try { await saveProduct({ ...p, featured: v }); toast("success", v ? "Featured on homepage" : "Removed from featured", p.name); } catch (e) { toast("error", "Couldn't update product", e instanceof Error ? e.message : "Try again."); } }} /></td>
@@ -492,6 +565,20 @@ export function AdminProducts() {
             </table>
           </div>
         </div>
+      )}
+
+      {bulkOpen && (
+        <BulkPriceModal
+          count={selected.length}
+          onClose={() => setBulkOpen(false)}
+          onApply={async (mode, amount, currency) => {
+            try {
+              await bulkUpdatePrices(selected, mode, amount, currency);
+              toast("success", "Prices updated", `${selected.length} product(s) updated.`);
+              setBulkOpen(false); setSelected([]);
+            } catch (e) { toast("error", "Couldn't update prices", e instanceof Error ? e.message : "Try again."); }
+          }}
+        />
       )}
 
       {editing && (
@@ -552,8 +639,14 @@ function ProductForm({ product, onClose, onSave }: { product: Product; onClose: 
             </Select>
           </Field>
         </div>
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-4">
           <Field label="Price"><TextInput type="number" value={f.price} onChange={(e) => set({ price: Number(e.target.value) })} /></Field>
+          <Field label="Currency">
+            <Select value={f.currency} onChange={(e) => set({ currency: e.target.value as Product["currency"] })}>
+              <option value="USD">USD ($)</option>
+              <option value="EGP">EGP (E£)</option>
+            </Select>
+          </Field>
           {f.billing === "subscription" && (
             <>
               <Field label="Monthly"><TextInput type="number" value={f.monthlyPrice ?? ""} onChange={(e) => set({ monthlyPrice: e.target.value ? Number(e.target.value) : undefined })} /></Field>

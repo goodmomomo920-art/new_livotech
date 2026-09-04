@@ -50,6 +50,9 @@ interface StoreCtx {
   setCart: (cart: CartState | null) => void;
   validateCoupon: (code: string, subtotal: number) => Promise<Coupon & { discount: number }>;
   checkout: (input: CheckoutInput) => Promise<Order>;
+  createPendingOrder: (input: CheckoutInput) => Promise<Order>;
+  provisionOrder: (orderId: string) => Promise<Order>;
+  pollOrderPayment: (orderId: string, timeoutMs?: number) => Promise<Order>;
   recordDownload: (productId: string, fileId: string, fileName: string) => Promise<void>;
   createTicket: (subject: string, category: string, body: string) => Promise<Ticket>;
   replyTicket: (ticketId: string, body: string, author: "customer" | "support", authorName: string) => Promise<void>;
@@ -59,6 +62,7 @@ interface StoreCtx {
   cancelSubscription: (subId: string) => Promise<void>;
   saveProduct: (p: Product) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
+  bulkUpdatePrices: (ids: string[], mode: "set" | "percent" | "add", amount: number, currency?: Product["currency"]) => Promise<void>;
   duplicateProduct: (id: string) => Promise<Product>;
   saveCategory: (c: Category) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
@@ -331,6 +335,104 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return order as Order;
   }, [me, cart, state.products, state.addons, state.ownerships, state.settings, validateCoupon, loadUserData, setCart]);
 
+  /** Creates the order row as "pending" and leaves the cart untouched — used for real
+   *  gateway (Kashier) checkouts, where the order must exist before we redirect the
+   *  customer away to pay. Nothing is granted yet; provisionOrder() does that once the
+   *  gateway confirms payment. */
+  const createPendingOrder = useCallback(async (input: CheckoutInput): Promise<Order> => {
+    if (!me) throw new Error("You must be logged in to complete a purchase.");
+    if (!cart) throw new Error("Your cart is empty.");
+    const product = state.products.find((p) => p.id === cart.productId);
+    if (!product || !product.active) throw new Error("This product is no longer available.");
+    const ownedBase = state.ownerships.some((o) => o.customerId === me.id && o.productId === product.id && o.status === "active");
+    if (ownedBase && cart.addonIds.length === 0) throw new Error("You already own this product — attach add-ons to it instead.");
+
+    const interval = cart.interval;
+    const unit = interval === "monthly" ? product.monthlyPrice ?? product.price : interval === "yearly" ? product.yearlyPrice ?? product.price : product.price;
+    const items: OrderItem[] = ownedBase ? [] : [{ productId: product.id, name: product.name, type: product.type, qty: 1, unitPrice: unit, interval, total: unit }];
+    const addons = cart.addonIds.map((id) => state.addons.find((a) => a.id === id)).filter((a): a is Addon => !!a && a.active);
+    addons.forEach((ad) => items.push({ productId: ad.id, name: `${ad.name} · ${product.name}`, type: "addon", qty: 1, unitPrice: ad.price, interval: ad.interval as any, total: ad.price }));
+
+    const subtotal = Math.round(items.reduce((s, i) => s + i.total, 0) * 100) / 100;
+    let discount = 0, couponCode: string | undefined;
+    if (input.couponCode) { const v = await validateCoupon(input.couponCode, subtotal); discount = v.discount; couponCode = v.code; }
+    const total = Math.round((subtotal - discount) * 100) / 100;
+
+    return must<Order>(await supabase.from("orders").insert({
+      number: "", customerId: me.id, items, subtotal, discount, couponCode: couponCode ?? null, total,
+      currency: product.currency, status: "pending", paymentStatus: "pending", paymentMethod: input.method,
+    }).select("*").single());
+  }, [me, cart, state.products, state.addons, state.ownerships, validateCoupon]);
+
+  /** Grants everything a paid order promised (ownership, subscriptions, add-ons,
+   *  auto-provisioned websites, notifications) — called after a gateway confirms
+   *  payment. Safe to call more than once: skips straight past an order that's
+   *  already been provisioned or isn't marked paid yet. */
+  const provisionOrder = useCallback(async (orderId: string): Promise<Order> => {
+    if (!me) throw new Error("You must be logged in.");
+    const order = must<Order>(await supabase.from("orders").select("*").eq("id", orderId).single());
+    if (order.paymentStatus !== "paid") return order;
+    const already = await supabase.from("ownerships").select("id").eq("orderId", order.id).limit(1);
+    const addonAlready = await supabase.from("customer_addons").select("id").eq("orderId", order.id).limit(1);
+    if ((already.data && already.data.length > 0) || (addonAlready.data && addonAlready.data.length > 0)) return order;
+
+    const baseItem = order.items.find((i) => i.type !== "addon");
+    const addonItems = order.items.filter((i) => i.type === "addon");
+    const product = baseItem ? state.products.find((p) => p.id === baseItem.productId) : undefined;
+    const ownedBase = !!product && state.ownerships.some((o) => o.customerId === me.id && o.productId === product.id && o.status === "active");
+
+    let sub: Subscription | null = null;
+    if (product && baseItem && !ownedBase) {
+      if (baseItem.interval !== "once") {
+        sub = must<Subscription>(await supabase.from("subscriptions").insert({
+          customerId: me.id, productId: product.id, orderId: order.id,
+          plan: `${product.name} ${baseItem.interval === "monthly" ? "Monthly" : "Yearly"}`, price: baseItem.unitPrice,
+          interval: baseItem.interval, status: "active",
+          nextBillingAt: new Date(Date.now() + (baseItem.interval === "monthly" ? 30 : 365) * 864e5).toISOString(),
+        }).select("*").single());
+      }
+      check(await supabase.from("ownerships").insert({
+        customerId: me.id, productId: product.id, orderId: order.id, status: "active",
+        activatedAt: now(), expiresAt: sub?.nextBillingAt, subscriptionId: sub?.id,
+      }));
+      if (product.type === "website") {
+        const slugPart = product.slug.split("-")[0];
+        const domain = `${slugPart}-${me.id.slice(-4)}.livo.site`;
+        check(await supabase.from("websites").insert({ name: `${product.name} — ${me.company || me.name}`, productId: product.id, customerId: me.id, domain, url: `https://${domain}`, plan: "Owned license", status: "pending" }));
+      }
+    }
+    for (const item of addonItems) {
+      const ad = state.addons.find((a) => a.id === item.productId);
+      if (!ad || !product) continue;
+      check(await supabase.from("customer_addons").insert({
+        customerId: me.id, addonId: ad.id, attachedProductId: product.id, attachedProductName: product.name,
+        orderId: order.id, interval: ad.interval, price: ad.price, status: "active",
+        renewsAt: ad.interval === "monthly" ? new Date(Date.now() + 30 * 864e5).toISOString() : null,
+      }));
+      if (ad.interval === "monthly") {
+        check(await supabase.from("subscriptions").insert({ customerId: me.id, productId: ad.id, orderId: order.id, plan: ad.name, price: ad.price, interval: "monthly", status: "active", nextBillingAt: new Date(Date.now() + 30 * 864e5).toISOString() }));
+      }
+    }
+    check(await supabase.from("notifications").insert({ userId: me.id, title: "Purchase confirmed", body: `Order ${order.number}${product ? ` — ${product.name}` : ""}.`, kind: "purchase", href: product?.downloadable ? "/dashboard/downloads" : "/dashboard/products" }));
+    check(await supabase.from("notifications").insert({ userId: "admin", title: "New order", body: `${me.name}${product ? ` — ${product.name}` : ""} (${order.total} ${order.currency})`, kind: "purchase", href: "/admin/orders" }));
+
+    setCart(null);
+    await loadUserData(me.id);
+    return order;
+  }, [me, state.products, state.addons, state.ownerships, loadUserData, setCart]);
+
+  /** Polls an order until the Kashier webhook has flipped it to paid/failed, or `timeoutMs`
+   *  elapses. The webhook is the only thing that writes paymentStatus — this just waits for it. */
+  const pollOrderPayment = useCallback(async (orderId: string, timeoutMs = 25000): Promise<Order> => {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      const order = must<Order>(await supabase.from("orders").select("*").eq("id", orderId).single());
+      if (order.paymentStatus !== "pending") return order;
+      await wait(1500);
+    }
+    return must<Order>(await supabase.from("orders").select("*").eq("id", orderId).single());
+  }, []);
+
   /* ---------------------------- customer actions ---------------------------- */
 
   const recordDownload = useCallback(async (productId: string, fileId: string, fileName: string) => {
@@ -428,6 +530,30 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     await logAudit("product.delete", "product", id);
     await loadPublicData();
   }, [me, can, loadPublicData]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** Bulk-adjust price fields on many products at once. `mode` "set" writes the exact
+   *  amount; "percent" scales the current price by (100 + amount)%; "add" adds/subtracts
+   *  a flat amount. Only touches products in `ids`, and only the price fields present
+   *  on each product (monthly/yearly are skipped for one-time products). */
+  const bulkUpdatePrices = useCallback(async (ids: string[], mode: "set" | "percent" | "add", amount: number, currency?: Product["currency"]) => {
+    requirePerm("products");
+    const targets = state.products.filter((p) => ids.includes(p.id));
+    const apply = (v: number) => {
+      if (mode === "set") return Math.max(0, amount);
+      if (mode === "percent") return Math.max(0, Math.round(v * (1 + amount / 100) * 100) / 100);
+      return Math.max(0, Math.round((v + amount) * 100) / 100);
+    };
+    await Promise.all(targets.map(async (p) => {
+      const patch: Partial<Product> = { price: apply(p.price), updatedAt: now() };
+      if (p.monthlyPrice != null) patch.monthlyPrice = apply(p.monthlyPrice);
+      if (p.yearlyPrice != null) patch.yearlyPrice = apply(p.yearlyPrice);
+      if (p.compareAt != null) patch.compareAt = apply(p.compareAt);
+      if (currency) patch.currency = currency;
+      check(await supabase.from("products").update(patch).eq("id", p.id));
+    }));
+    await logAudit("product.bulk_price", "product", `${ids.length} products`, `${mode} ${amount}${currency ? ` · ${currency}` : ""}`);
+    await loadPublicData();
+  }, [state.products, me, can, loadPublicData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const duplicateProduct = useCallback(async (id: string) => {
     requirePerm("products");
@@ -573,9 +699,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const value: StoreCtx = {
     state, me, loading, toasts, toast, dismissToast, can, refresh,
     login, register, logout, requestReset, updateProfile, changePassword, sendContact,
-    setCart, validateCoupon, checkout,
+    setCart, validateCoupon, checkout, createPendingOrder, provisionOrder, pollOrderPayment,
     recordDownload, createTicket, replyTicket, setTicketStatus, markNotif, markAllNotifs, cancelSubscription,
-    saveProduct, deleteProduct, duplicateProduct, saveCategory, deleteCategory, moveCategory, saveAddon, deleteAddon,
+    saveProduct, deleteProduct, bulkUpdatePrices, duplicateProduct, saveCategory, deleteCategory, moveCategory, saveAddon, deleteAddon,
     setOrderStatus, setSubStatus, setUserStatus, setUserRole, addStaff, saveCoupon, deleteCoupon,
     saveSettings, togglePerm, broadcast, resetDemo,
   };
