@@ -4,7 +4,7 @@ import { useStore } from "../../lib/store";
 import { TYPE_META } from "../../lib/seed";
 import { I, Logo } from "../../components/icons";
 import { Avatar, Badge, Btn, Drawer, EmptyState, fmtDate, money, StatusBadge, timeAgo, useNoIndex, usePageTitle } from "../../components/ui";
-import { Reveal, Stagger, StaggerItem, StaggerNow, StaggerItemNow } from "../../lib/motion";
+import { Reveal, Stagger, StaggerItem } from "../../lib/motion";
 import { TypeBadge } from "../../components/product";
 import { AttachAddonModal } from "../../components/AttachAddon";
 import type { Addon } from "../../lib/types";
@@ -140,17 +140,17 @@ export function OverviewPage() {
           </div>
         </Reveal>
 
-        <StaggerNow className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Stagger className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
           {stats.map((s) => (
-            <StaggerItemNow key={s.label}>
+            <StaggerItem key={s.label}>
               <Link to={s.to} className="card card-hover group p-5">
                 <span className={`mb-3 grid size-10 place-items-center rounded-lg border ${s.tone}`}><I name={s.icon} size={17} /></span>
                 <p className="num text-3xl font-bold">{s.val}</p>
                 <p className="mt-0.5 text-[12px] font-semibold text-mist-500">{s.label}</p>
               </Link>
-            </StaggerItemNow>
+            </StaggerItem>
           ))}
-        </StaggerNow>
+        </Stagger>
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[1.5fr_1fr]">
           <section>
