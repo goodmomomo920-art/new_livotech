@@ -174,7 +174,7 @@ export function AdminOverview() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-7">
-      <Stagger className="grid grid-cols-2 gap-3.5 md:grid-cols-4">
+      <Stagger className="grid grid-cols-2 items-start gap-3.5 md:grid-cols-4">
         {kpis.map((k) => (
           <StaggerItem key={k.label}>
             <Link to={k.to} className="card card-hover group p-4">

@@ -35,8 +35,12 @@ export function Reveal({
 export function Stagger({ children, className }: { children: ReactNode; className?: string }) {
   return <div className={className}>{children}</div>;
 }
+// self-start: grid items stretch to match the tallest item in their row by default —
+// when one card's label wraps to a second line, the shorter cards stretch to match
+// and leave a blank gap below them. self-start makes every card size to its own
+// content instead, so that gap can never appear.
 export function StaggerItem({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={className}>{children}</div>;
+  return <div className={`self-start ${className ?? ""}`}>{children}</div>;
 }
 
 export const StaggerNow = Stagger;

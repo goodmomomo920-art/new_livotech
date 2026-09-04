@@ -140,7 +140,7 @@ export function OverviewPage() {
           </div>
         </Reveal>
 
-        <Stagger className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Stagger className="mt-6 grid grid-cols-2 items-start gap-4 lg:grid-cols-4">
           {stats.map((s) => (
             <StaggerItem key={s.label}>
               <Link to={s.to} className="card card-hover group p-5">
