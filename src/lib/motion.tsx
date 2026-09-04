@@ -32,8 +32,8 @@ const staggerParent: Variants = {
   show: { transition: { staggerChildren: 0.09, delayChildren: 0.05 } },
 };
 const staggerChild: Variants = {
-  hidden: { opacity: 0, y: 24 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.65, ease: EASE } },
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { duration: 0.4, ease: EASE } },
 };
 
 /* Stagger/StaggerItem used to gate on scroll (`whileInView`) with a one-shot observer.
