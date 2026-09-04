@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { motion, useReducedMotion, type Variants } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 
 /* Shared motion tokens */
 export const EASE = [0.22, 1, 0.36, 1] as const;
@@ -26,35 +26,17 @@ export function Reveal({
   );
 }
 
-/* Stagger parent/children */
-const staggerParent: Variants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.09, delayChildren: 0.05 } },
-};
-const staggerChild: Variants = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { duration: 0.4, ease: EASE } },
-};
-
-/* Stagger/StaggerItem used to gate on scroll (`whileInView`) with a one-shot observer.
-   That's flaky for anything that can mount while already on-screen — the KPI grids
-   in the admin and customer overviews, filtered lists, etc. — leaving items stuck at
-   opacity:0. Rather than keep chasing every place that bites, both now animate in as
-   soon as they mount, everywhere, unconditionally. StaggerNow/StaggerItemNow are kept
-   as aliases so existing imports keep working. */
+/* Stagger/StaggerItem used to animate grids in (fade, then a scroll-triggered fade,
+   then fade-only) but every version of that kept producing visible glitches on the
+   KPI grids (stuck-invisible cards, then rows overlapping mid-transition). Rather than
+   chase a fourth animation tweak, these are now plain wrappers with no animation at
+   all — children just render. Kept as components (not deleted) so every existing
+   `<Stagger>`/`<StaggerItem>` call site keeps working with no further changes needed. */
 export function Stagger({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <motion.div className={className} variants={staggerParent} initial="hidden" animate="show">
-      {children}
-    </motion.div>
-  );
+  return <div className={className}>{children}</div>;
 }
 export function StaggerItem({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <motion.div className={className} variants={staggerChild}>
-      {children}
-    </motion.div>
-  );
+  return <div className={className}>{children}</div>;
 }
 
 export const StaggerNow = Stagger;
