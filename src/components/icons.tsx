@@ -72,12 +72,14 @@ export function I({ name, size = 18, strokeWidth = 1.8, ...rest }: { name: strin
   );
 }
 
-export function Logo({ size = 30 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden>
-      <rect width="32" height="32" rx="8.5" fill="#0D1520" stroke="rgba(5,150,105,0.35)" />
-      <path d="M10 8v13h12" stroke="#059669" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-      <circle cx="22" cy="21" r="3" fill="#F59E0B" />
-    </svg>
-  );
+import logoIcon from "../assets/livotech-icon.png";
+import logoFull from "../assets/livotech-logo.png";
+
+export function Logo({ size = 30, className = "" }: { size?: number; className?: string }) {
+  return <img src={logoIcon} alt="LivoTech" width={size} height={size} className={`object-contain ${className}`} />;
+}
+
+/** Full lockup (mark + wordmark + tagline) for larger brand moments — footer, auth pages. */
+export function LogoFull({ width = 220, className = "" }: { width?: number; className?: string }) {
+  return <img src={logoFull} alt="LivoTech — Digital products, tools & solutions" width={width} className={`object-contain ${className}`} />;
 }

@@ -3,7 +3,7 @@ import { HashRouter, Link, Navigate, Outlet, Route, Routes, useLocation } from "
 import { StoreProvider, useStore } from "./lib/store";
 import { Footer, Navbar } from "./components/chrome";
 import { Btn, Spinner, ToastHost } from "./components/ui";
-import { ExitIntentPopup, LiveActivityToast, StickyCtaBar } from "./components/growth";
+import { ExitIntentPopup, LiveActivityToast, StickyCtaBar, BrandBg } from "./components/growth";
 import AuthPage from "./pages/Auth";
 import { AddonsPage, PricingPage } from "./pages/Pricing";
 import { AboutPage, ContactPage, FaqPage } from "./pages/StaticPages";
@@ -75,6 +75,7 @@ function PublicLayout() {
   const { pathname } = useLocation();
   return (
     <div className="flex min-h-screen flex-col">
+      <BrandBg />
       <MaintenanceBanner />
       <Navbar />
       <div key={pathname} className="page-enter flex-1">

@@ -66,6 +66,60 @@ export function HeroMotionBg() {
 }
 
 /* ============================================================================
+   8) BRAND BACKGROUND — site-wide, subtle, echoes the LivoTech mark: a giant
+   faint "LT" watermark plus small drifting pixel-squares (the logo's own
+   motif), in the logo's navy/blue palette. Fixed behind all page content.
+   ========================================================================= */
+
+export function BrandBg() {
+  const reduced = usePrefersReducedMotion();
+  const pixels = useMemo(
+    () =>
+      Array.from({ length: 10 }, (_, i) => ({
+        id: i,
+        left: 2 + Math.random() * 96,
+        size: 4 + Math.random() * 8,
+        delay: Math.random() * 14,
+        duration: 16 + Math.random() * 12,
+        drift: `${(Math.random() - 0.5) * 90}px`,
+        hue: i % 2 === 0 ? "#0284c7" : "#16202b",
+      })),
+    [],
+  );
+
+  return (
+    <div className="pointer-events-none fixed inset-0 -z-30 overflow-hidden" aria-hidden>
+      {/* giant faint LT wordmark watermark */}
+      <span
+        className="absolute left-1/2 top-[8%] -translate-x-1/2 select-none font-display font-bold leading-none tracking-tight opacity-[0.035]"
+        style={{ fontSize: "clamp(18rem, 42vw, 34rem)", color: "#0b1830" }}
+      >
+        LT
+      </span>
+      {/* drifting brand pixels, matching the logo's dot motif */}
+      {!reduced &&
+        pixels.map((p) => (
+          <span
+            key={p.id}
+            className="anim-particle rounded-[3px]"
+            style={{
+              left: `${p.left}%`,
+              width: p.size,
+              height: p.size,
+              background: p.hue,
+              opacity: 0.16,
+              animationDuration: `${p.duration}s`,
+              animationDelay: `${p.delay}s`,
+              // @ts-expect-error custom property
+              "--drift": p.drift,
+            }}
+          />
+        ))}
+    </div>
+  );
+}
+
+/* ============================================================================
    2) LIVE LAUNCH COUNTER — real number, computed from store orders/websites
    ========================================================================= */
 
