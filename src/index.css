@@ -156,11 +156,28 @@ body {
 @keyframes pagein { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 .page-enter { animation: pagein 0.4s cubic-bezier(0.22, 1, 0.36, 1); }
 
+/* ---------- hero motion-graphics bg (pure CSS/SVG, no video) ---------- */
+@keyframes meshDrift { 0%, 100% { transform: translate(0,0) scale(1); } 33% { transform: translate(3%,-4%) scale(1.06); } 66% { transform: translate(-3%,3%) scale(0.98); } }
+@keyframes pulseGlow { 0%, 100% { opacity: 0.35; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.35); } }
+@keyframes particleUp { 0% { transform: translateY(0) translateX(0); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: translateY(-140px) translateX(var(--drift, 12px)); opacity: 0; } }
+@keyframes ctaPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(5,150,105,0.45); } 70% { box-shadow: 0 0 0 14px rgba(5,150,105,0); } }
+@keyframes sweepIn { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes slideUpFade { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+.anim-mesh { animation: meshDrift 18s ease-in-out infinite; }
+.anim-mesh-b { animation: meshDrift 22s ease-in-out infinite reverse; }
+.anim-pulse-dot { animation: pulseGlow 3.2s ease-in-out infinite; }
+.anim-particle { position: absolute; bottom: 0; border-radius: 9999px; animation: particleUp linear infinite; }
+.cta-pulse { animation: ctaPulse 2.4s ease-in-out infinite; }
+.sticky-bar-in { animation: sweepIn 0.4s cubic-bezier(0.22,1,0.36,1); }
+.toast-slide-in { animation: slideUpFade 0.35s cubic-bezier(0.22,1,0.36,1); }
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .anim-floaty, .anim-floaty-slow, .anim-marquee, .anim-spin-slow, .anim-grid-drift, .anim-blink,
   .hero-blob-a, .hero-blob-b, .hero-blob-c,
-  .toast-in, .pop-in, .page-enter { animation: none !important; }
+  .toast-in, .pop-in, .page-enter,
+  .anim-mesh, .anim-mesh-b, .anim-pulse-dot, .anim-particle, .cta-pulse, .sticky-bar-in, .toast-slide-in { animation: none !important; }
   .line-mask > span { transform: none; animation: none; }
   .sheen::after { display: none; }
   *, *::before, *::after { transition-duration: 0.01ms !important; }

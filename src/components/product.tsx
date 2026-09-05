@@ -60,6 +60,7 @@ export function PriceTag({ product, size = "md" }: { product: Product; size?: "m
 /* ------------------------------- product card ------------------------------- */
 
 export function ProductCard({ product, index = 0, badge }: { product: Product; index?: number; badge?: string }) {
+  const isNew = Date.now() - new Date(product.createdAt).getTime() < 1000 * 60 * 60 * 24 * 30;
   return (
     <Reveal delay={Math.min(index * 0.06, 0.3)} className="h-full">
       <Link
@@ -69,11 +70,18 @@ export function ProductCard({ product, index = 0, badge }: { product: Product; i
         <div className="relative aspect-[3/2] overflow-hidden border-b border-mist-100/8">
           <img
             src={product.image} alt={`${product.name} preview`} loading="lazy"
-            className="h-full w-full object-cover object-top transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.05]"
+            className="h-full w-full object-cover object-top transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.1]"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-ink-950/60 via-transparent to-transparent opacity-60" />
+          {/* quick-view overlay on hover */}
+          <div className="absolute inset-0 flex items-center justify-center bg-ink-950/0 opacity-0 transition-all duration-300 group-hover:bg-ink-950/35 group-hover:opacity-100">
+            <span className="translate-y-2 rounded-full bg-ink-900/95 px-4 py-2 text-[12.5px] font-semibold text-mist-100 shadow-lg transition-transform duration-300 group-hover:translate-y-0">
+              <I name="eye" size={13} className="mr-1.5 inline -translate-y-px" /> معاينة سريعة
+            </span>
+          </div>
           <div className="absolute left-3 top-3 flex gap-1.5">
             {badge && <Badge tone="pulse">{badge}</Badge>}
+            {isNew && <Badge tone="wave">جديد</Badge>}
             {product.featured && <Badge tone="solar">Featured</Badge>}
             {product.downloadable && <Badge tone="wave">Instant download</Badge>}
           </div>

@@ -7,6 +7,7 @@ import { I } from "../components/icons";
 import { Badge, money, SectionHead, usePageTitle } from "../components/ui";
 import { Counter, Float, Magnetic, Marquee, Reveal, Stagger, StaggerItem, Tilt, usePrefersReducedMotion } from "../lib/motion";
 import { AddonCard, ProductCard, TypeBadge } from "../components/product";
+import { HeroMotionBg, LiveLaunchBadge, SavingsCalculator, TrustBar } from "../components/growth";
 
 /* ------------------------------ scramble text ------------------------------ */
 
@@ -207,6 +208,7 @@ export default function Home() {
     <div className="overflow-x-clip">
       {/* ============ HERO ============ */}
       <section className="relative">
+        <HeroMotionBg />
         <div className="bg-grid anim-grid-drift absolute inset-0 -z-20 [mask-image:radial-gradient(75%_65%_at_50%_35%,black,transparent)]" />
         <div className="absolute -top-32 left-1/2 -z-10 h-[480px] w-[820px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(5,150,105,0.12),transparent_70%)]" />
         <div className="hero-blob hero-blob-a -left-24 top-[-60px] -z-10 h-72 w-72 bg-pulse-400/18" />
@@ -229,17 +231,18 @@ export default function Home() {
               Websites, POS & inventory systems, SaaS, templates and e-books — discovered, purchased and managed in one ecosystem.
               Buy once or subscribe, then <span className="text-mist-200">stack add-ons</span> as you grow.
             </p>
-            <div className="mt-8 flex flex-wrap items-center gap-3.5">
+            <div className="mt-8 flex flex-wrap items-center gap-5">
               <Magnetic>
-                <Link to="/products" className="group inline-flex items-center gap-2.5 rounded-xl bg-pulse-400 px-6 py-3.5 text-[15px] font-bold text-ink-950 shadow-[0_16px_40px_-12px_rgba(5,150,105,0.65)] transition-all hover:bg-pulse-300">
+                <Link to="/products" className="cta-pulse group inline-flex items-center gap-2.5 rounded-xl bg-pulse-400 px-7 py-4 text-[15.5px] font-bold text-ink-950 shadow-[0_16px_40px_-12px_rgba(5,150,105,0.65)] transition-all hover:bg-pulse-300">
                   Browse products
                   <I name="arrowR" size={17} className="transition-transform duration-300 group-hover:translate-x-1" />
                 </Link>
               </Magnetic>
-              <Link to="/solutions" className="group inline-flex items-center gap-2 rounded-xl border border-mist-100/20 px-6 py-3.5 text-[15px] font-semibold text-mist-200 transition-all hover:border-pulse-400/60 hover:text-pulse-300">
-                Explore solutions <I name="arrowUR" size={16} className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+              <Link to="/solutions" className="link-line group inline-flex items-center gap-1.5 text-[14px] font-semibold text-mist-300 transition-colors hover:text-pulse-300">
+                Explore solutions <I name="arrowUR" size={14} className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
               </Link>
             </div>
+            <div className="mt-6"><LiveLaunchBadge /></div>
             <div className="mt-10 flex flex-wrap gap-x-8 gap-y-3 border-t border-mist-100/10 pt-6 text-[13px] text-mist-400">
               <span className="flex items-center gap-2"><I name="check" size={14} className="text-pulse-400" /> Own it forever or subscribe</span>
               <span className="flex items-center gap-2"><I name="check" size={14} className="text-pulse-400" /> Instant downloads with a guide</span>
@@ -265,6 +268,8 @@ export default function Home() {
           </Marquee>
         </div>
       </section>
+
+      <TrustBar />
 
       {/* ============ ECOSYSTEM BENTO ============ */}
       <section className="container-x py-24">
@@ -411,6 +416,11 @@ export default function Home() {
             <p className="relative mt-8 text-center text-[11.5px] text-mist-500">Live numbers, updated in real time.</p>
           </div>
         </Reveal>
+      </section>
+
+      {/* ============ SAVINGS CALCULATOR ============ */}
+      <section className="container-x pb-24">
+        <Reveal><SavingsCalculator /></Reveal>
       </section>
 
       {/* ============ FAQ ============ */}

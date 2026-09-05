@@ -3,6 +3,7 @@ import { HashRouter, Link, Navigate, Outlet, Route, Routes, useLocation } from "
 import { StoreProvider, useStore } from "./lib/store";
 import { Footer, Navbar } from "./components/chrome";
 import { Btn, Spinner, ToastHost } from "./components/ui";
+import { ExitIntentPopup, LiveActivityToast, StickyCtaBar } from "./components/growth";
 import AuthPage from "./pages/Auth";
 import { AddonsPage, PricingPage } from "./pages/Pricing";
 import { AboutPage, ContactPage, FaqPage } from "./pages/StaticPages";
@@ -80,6 +81,9 @@ function PublicLayout() {
         <Outlet />
       </div>
       <Footer />
+      <StickyCtaBar />
+      <LiveActivityToast />
+      <ExitIntentPopup />
     </div>
   );
 }
