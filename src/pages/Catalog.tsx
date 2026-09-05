@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useStore } from "../lib/store";
-import { TYPE_META } from "../lib/seed";
 import { I } from "../components/icons";
 import { Badge, CardSkeleton, Pagination, SearchInput, Select, useDebounced, usePageTitle, useSimLoad } from "../components/ui";
 import { Reveal, StaggerNow, StaggerItemNow } from "../lib/motion";
 import { ProductCard } from "../components/product";
-import type { ProductType } from "../lib/types";
 
 export type CatalogMode = "all" | "solutions" | "digital" | "ebooks";
 
@@ -89,11 +87,15 @@ export default function CatalogPage({ mode }: { mode: CatalogMode }) {
 
   const loading = useSimLoad([]);
   const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
-  const typeCounts = useMemo(() => {
+  const catCounts = useMemo(() => {
     const m = new Map<string, number>();
-    base.forEach((p) => m.set(p.type, (m.get(p.type) ?? 0) + 1));
+    base.forEach((p) => m.set(p.categoryId, (m.get(p.categoryId) ?? 0) + 1));
     return m;
   }, [base]);
+  const activeCategories = useMemo(
+    () => state.categories.filter((c) => c.active && (catCounts.get(c.id) ?? 0) > 0).sort((a, b) => a.order - b.order),
+    [state.categories, catCounts]
+  );
 
   return (
     <div>
@@ -111,17 +113,13 @@ export default function CatalogPage({ mode }: { mode: CatalogMode }) {
       <div className="container-x py-10">
         <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap items-center gap-2">
-            <FilterChip active={type === "all"} onClick={() => setType("all")} label={`All (${base.length})`} />
-            {(Object.keys(TYPE_META) as ProductType[]).filter((t) => typeCounts.has(t)).map((t) => (
-              <FilterChip key={t} active={type === t} onClick={() => setType(t)} label={`${TYPE_META[t].plural} (${typeCounts.get(t)})`} icon={TYPE_META[t].icon} />
+            <FilterChip active={cat === "all"} onClick={() => setCat("all")} label={`All (${base.length})`} />
+            {activeCategories.map((c) => (
+              <FilterChip key={c.id} active={cat === c.id} onClick={() => setCat(c.id)} label={`${c.name} (${catCounts.get(c.id)})`} />
             ))}
           </div>
           <div className="flex flex-wrap items-center gap-2.5">
             <SearchInput value={search} onChange={setSearch} placeholder="Search products…" className="w-full sm:w-56" />
-            <Select value={cat} onChange={(e) => setCat(e.target.value)} className="!w-auto" aria-label="Filter by category">
-              <option value="all">All categories</option>
-              {state.categories.filter((c) => c.active).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </Select>
             <Select value={sort} onChange={(e) => setSort(e.target.value)} className="!w-auto" aria-label="Sort products">
               <option value="featured">Featured first</option>
               <option value="price-asc">Price: low → high</option>
