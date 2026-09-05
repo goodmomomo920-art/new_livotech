@@ -595,11 +595,19 @@ export function AdminProducts() {
   );
 }
 
+/** Builds a free auto-updating screenshot URL for a live site, used to auto-fill the product's main image. */
+const screenshotUrlFor = (liveUrl: string) => `https://s0.wp.com/mshots/v1/${encodeURIComponent(liveUrl.trim())}?w=1200`;
+
 function ProductForm({ product, onClose, onSave }: { product: Product; onClose: () => void; onSave: (p: Product) => void }) {
   const { state } = useStore();
   const [f, setF] = useState<Product>({ ...product });
   const [busy, setBusy] = useState(false);
+  const [autoImage, setAutoImage] = useState(!product.image || product.image === screenshotUrlFor(product.previewUrl ?? ""));
   const set = (patch: Partial<Product>) => setF((x) => ({ ...x, ...patch }));
+
+  const setPreviewUrl = (url: string) => {
+    setF((x) => ({ ...x, previewUrl: url, image: autoImage && url.trim() ? screenshotUrlFor(url) : x.image }));
+  };
 
   return (
     <Modal open onClose={onClose} wide title={product.name ? `Edit · ${product.name}` : "New product"}
@@ -608,7 +616,8 @@ function ProductForm({ product, onClose, onSave }: { product: Product; onClose: 
         <Btn icon="check" loading={busy} onClick={async () => {
           if (f.name.trim().length < 2) return;
           setBusy(true);
-          await onSave({ ...f, name: f.name.trim() });
+          const image = f.image || (f.previewUrl ? screenshotUrlFor(f.previewUrl) : f.image);
+          await onSave({ ...f, name: f.name.trim(), image });
           setBusy(false);
         }}>Save product</Btn>
       </>}>
@@ -671,8 +680,20 @@ function ProductForm({ product, onClose, onSave }: { product: Product; onClose: 
           </Field>
         </div>
 
-        <Field label="Main image URL">
-          <TextInput value={f.image} onChange={(e) => set({ image: e.target.value })} placeholder="https://…" />
+        <Field label="Product preview URL" hint="live site link (e.g. sigma-pc-parts.livo.site) — shown as a live embedded preview inside the browser-frame box on the product page, and used to auto-generate the main image below">
+          <TextInput value={f.previewUrl ?? ""} onChange={(e) => setPreviewUrl(e.target.value)} placeholder="https://sigma-pc-parts.livo.site" />
+        </Field>
+
+        <Field label="Main image URL" hint={autoImage ? "auto-generated screenshot from the preview URL above" : "manual"}>
+          <div className="flex items-center gap-2">
+            <TextInput className="flex-1" value={f.image} onChange={(e) => { setAutoImage(false); set({ image: e.target.value }); }} placeholder="https://…" />
+            {f.previewUrl && (
+              <button type="button" onClick={() => { setAutoImage(true); set({ image: screenshotUrlFor(f.previewUrl!) }); }}
+                className={`shrink-0 rounded-lg border px-3 py-2 text-[12px] font-semibold transition-colors ${autoImage ? "border-pulse-400/40 bg-pulse-400/10 text-pulse-300" : "border-mist-100/12 text-mist-400 hover:text-mist-200"}`}>
+                Auto from preview
+              </button>
+            )}
+          </div>
         </Field>
 
         <div>
@@ -687,10 +708,6 @@ function ProductForm({ product, onClose, onSave }: { product: Product; onClose: 
           ))}
           <Btn size="sm" variant="soft" icon="plus" onClick={() => set({ gallery: [...f.gallery, ""] })}>Add gallery image</Btn>
         </div>
-
-        <Field label="Product preview URL" hint="live site link (e.g. sigma-pc-parts.livo.site) — shown as a live embedded preview inside the browser-frame box on the product page">
-          <TextInput value={f.previewUrl ?? ""} onChange={(e) => set({ previewUrl: e.target.value })} placeholder="https://sigma-pc-parts.livo.site" />
-        </Field>
 
         <Field label="Video URL" hint="YouTube, Vimeo, or a direct .mp4 link — the product page will embed it automatically">
           <TextInput value={f.videoUrl ?? ""} onChange={(e) => set({ videoUrl: e.target.value })} placeholder="https://youtube.com/watch?v=… or https://…/demo.mp4" />
