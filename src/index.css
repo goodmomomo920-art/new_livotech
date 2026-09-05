@@ -119,6 +119,9 @@ body {
 @keyframes spinsl { to { transform: rotate(360deg); } }
 @keyframes shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
 @keyframes blinkc { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+@keyframes blobA { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(4%, 6%) scale(1.12); } }
+@keyframes blobB { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-5%, -4%) scale(1.08); } }
+@keyframes blobC { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(3%, -6%) scale(1.15); } }
 
 .anim-floaty { animation: floaty 7s ease-in-out infinite; }
 .anim-floaty-slow { animation: floaty 11s ease-in-out infinite; }
@@ -126,6 +129,12 @@ body {
 .anim-spin-slow { animation: spinsl 22s linear infinite; }
 .anim-grid-drift { animation: drift 14s linear infinite; }
 .anim-blink { animation: blinkc 1.6s ease-in-out infinite; }
+
+/* Hero ambient background blobs — pure CSS, no video/canvas. Disabled under reduced-motion below. */
+.hero-blob { position: absolute; border-radius: 9999px; filter: blur(70px); pointer-events: none; }
+.hero-blob-a { animation: blobA 16s ease-in-out infinite; }
+.hero-blob-b { animation: blobB 20s ease-in-out infinite; animation-delay: -4s; }
+.hero-blob-c { animation: blobC 24s ease-in-out infinite; animation-delay: -9s; }
 
 .skeleton {
   background: linear-gradient(90deg, #eef2f7 25%, #e2e8f0 50%, #eef2f7 75%);
@@ -150,6 +159,7 @@ body {
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .anim-floaty, .anim-floaty-slow, .anim-marquee, .anim-spin-slow, .anim-grid-drift, .anim-blink,
+  .hero-blob-a, .hero-blob-b, .hero-blob-c,
   .toast-in, .pop-in, .page-enter { animation: none !important; }
   .line-mask > span { transform: none; animation: none; }
   .sheen::after { display: none; }

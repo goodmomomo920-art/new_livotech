@@ -59,7 +59,7 @@ export function PriceTag({ product, size = "md" }: { product: Product; size?: "m
 
 /* ------------------------------- product card ------------------------------- */
 
-export function ProductCard({ product, index = 0 }: { product: Product; index?: number }) {
+export function ProductCard({ product, index = 0, badge }: { product: Product; index?: number; badge?: string }) {
   return (
     <Reveal delay={Math.min(index * 0.06, 0.3)} className="h-full">
       <Link
@@ -73,6 +73,7 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
           />
           <div className="absolute inset-0 bg-gradient-to-t from-ink-950/60 via-transparent to-transparent opacity-60" />
           <div className="absolute left-3 top-3 flex gap-1.5">
+            {badge && <Badge tone="pulse">{badge}</Badge>}
             {product.featured && <Badge tone="solar">Featured</Badge>}
             {product.downloadable && <Badge tone="wave">Instant download</Badge>}
           </div>

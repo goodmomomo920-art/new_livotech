@@ -34,7 +34,11 @@ function Scramble({ text, className = "" }: { text: string; className?: string }
 function HeroMock() {
   const { state } = useStore();
   const reduced = usePrefersReducedMotion();
-  const showcase = useMemo(() => state.products.filter((p) => ["p1", "p4", "p5"].includes(p.id)), [state.products]);
+  const showcase = useMemo(() => {
+    const slugs = ["novapharm-pharmacy-website", "swiftpos", "stockpilot-inventory"];
+    const found = slugs.map((s) => state.products.find((p) => p.slug === s)).filter((p): p is NonNullable<typeof p> => !!p);
+    return found.length ? found : state.products.slice(0, 3);
+  }, [state.products]);
   const [idx, setIdx] = useState(0);
   useEffect(() => {
     if (reduced || showcase.length < 2) return;
@@ -91,10 +95,10 @@ function HeroMock() {
 /* ----------------------------- sticky showcase ----------------------------- */
 
 const STEPS = [
-  { pid: "p1", icon: "globe", title: "Launch a website that actually sells", body: "Industry-tuned storefronts — pharmacy, restaurant, clinic — with ordering, booking and delivery wired in from day one. You own the license; we handle the plumbing." },
-  { pid: "p4", icon: "cpu", title: "Run the counter with SwiftPOS", body: "Barcode-first checkout, offline sync, shift reports. The register stops being the slow part of your business." },
-  { pid: "p5", icon: "layers", title: "Keep stock honest with StockPilot", body: "Reorder points, batch expiry and movement logs across every location. Alerts fire before the shelf goes empty." },
-  { pid: "p8", icon: "box", title: "Sell digital while you sleep", body: "Templates, UI kits and playbooks delivered the second payment clears — files, license and a download guide included." },
+  { slug: "novapharm-pharmacy-website", icon: "globe", title: "Launch a website that actually sells", body: "Industry-tuned storefronts — pharmacy, restaurant, clinic — with ordering, booking and delivery wired in from day one. You own the license; we handle the plumbing." },
+  { slug: "swiftpos", icon: "cpu", title: "Run the counter with SwiftPOS", body: "Barcode-first checkout, offline sync, shift reports. The register stops being the slow part of your business." },
+  { slug: "stockpilot-inventory", icon: "layers", title: "Keep stock honest with StockPilot", body: "Reorder points, batch expiry and movement logs across every location. Alerts fire before the shelf goes empty." },
+  { slug: "momentum-ui-kit", icon: "box", title: "Sell digital while you sleep", body: "Templates, UI kits and playbooks delivered the second payment clears — files, license and a download guide included." },
 ];
 
 function StickyShowcase() {
@@ -110,7 +114,7 @@ function StickyShowcase() {
     return () => io.disconnect();
   }, []);
   const step = STEPS[active];
-  const product = state.products.find((p) => p.id === step.pid);
+  const product = state.products.find((p) => p.slug === step.slug) ?? state.products[0];
 
   return (
     <section className="container-x grid gap-12 py-24 lg:grid-cols-2 lg:gap-16">
@@ -118,7 +122,7 @@ function StickyShowcase() {
         <Reveal>
           <div className="relative">
             <div className="absolute -inset-6 -z-10 rounded-3xl bg-[radial-gradient(closest-side,rgba(5,150,105,0.12),transparent_72%)] transition-all duration-700" />
-            <div key={step.pid} className="pop-in overflow-hidden rounded-2xl border border-mist-100/15 bg-ink-900 shadow-[0_36px_90px_-42px_rgba(22,32,43,0.4)]">
+            <div key={step.slug} className="pop-in overflow-hidden rounded-2xl border border-mist-100/15 bg-ink-900 shadow-[0_36px_90px_-42px_rgba(22,32,43,0.4)]">
               <div className="flex items-center justify-between border-b border-mist-100/10 bg-ink-800 px-4 py-2.5">
                 <span className="num text-[11px] text-mist-400">{product ? product.slug : "preview"}.livo.site</span>
                 <span className="flex items-center gap-1.5 text-[10.5px] font-semibold text-pulse-300"><span className="size-1.5 animate-pulse rounded-full bg-pulse-400" /> LIVE PREVIEW</span>
@@ -136,7 +140,7 @@ function StickyShowcase() {
           <span className="absolute bottom-6 left-[22px] top-6 w-px bg-gradient-to-b from-pulse-400/60 via-mist-100/15 to-transparent" />
           {STEPS.map((s, i) => (
             <div
-              key={s.pid} data-i={i} ref={(el) => { refs.current[i] = el; }}
+              key={s.slug} data-i={i} ref={(el) => { refs.current[i] = el; }}
               className={`relative flex gap-5 rounded-xl border p-5 transition-all duration-500 ${active === i ? "border-pulse-400/45 bg-pulse-400/[0.06]" : "border-transparent opacity-55 hover:opacity-80"}`}
             >
               <span className={`z-10 grid size-11 shrink-0 place-items-center rounded-xl border transition-all duration-500 ${active === i ? "border-pulse-400/50 bg-ink-900 text-pulse-300 shadow-[0_0_24px_-4px_rgba(5,150,105,0.45)]" : "border-mist-100/15 bg-ink-900 text-mist-400"}`}>
@@ -186,8 +190,16 @@ export default function Home() {
   const active = state.products.filter((p) => p.active);
   const featured = active.filter((p) => p.featured).slice(0, 4);
   const completedOrders = state.orders.filter((o) => o.paymentStatus === "paid");
+  const customerCount = state.users.filter((u) => u.role === "customer").length;
+  const bestSellerId = useMemo(() => {
+    const counts = new Map<string, number>();
+    state.ownerships.forEach((o) => { if (o.status === "active") counts.set(o.productId, (counts.get(o.productId) ?? 0) + 1); });
+    let top: string | null = null, max = 0;
+    counts.forEach((n, id) => { if (n > max) { max = n; top = id; } });
+    return max > 0 ? top : null;
+  }, [state.ownerships]);
   const minWebsite = Math.min(...active.filter((p) => p.type === "website").map((p) => p.price));
-  const pos = active.find((p) => p.id === "p4");
+  const pos = active.find((p) => p.slug === "swiftpos");
   const minDigital = Math.min(...active.filter((p) => p.downloadable).map((p) => p.price));
   const minAddon = Math.min(...state.addons.filter((a) => a.active).map((a) => a.price));
 
@@ -197,6 +209,9 @@ export default function Home() {
       <section className="relative">
         <div className="bg-grid anim-grid-drift absolute inset-0 -z-20 [mask-image:radial-gradient(75%_65%_at_50%_35%,black,transparent)]" />
         <div className="absolute -top-32 left-1/2 -z-10 h-[480px] w-[820px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(5,150,105,0.12),transparent_70%)]" />
+        <div className="hero-blob hero-blob-a -left-24 top-[-60px] -z-10 h-72 w-72 bg-pulse-400/18" />
+        <div className="hero-blob hero-blob-b right-[-40px] top-24 -z-10 h-80 w-80 bg-wave-400/14" />
+        <div className="hero-blob hero-blob-c left-1/3 top-96 -z-10 h-56 w-56 bg-pulse-500/12" />
         <div className="absolute right-[6%] top-40 -z-10 hidden lg:block"><Float delay={1}><I name="chip" size={34} className="text-mist-100/15" /></Float></div>
         <div className="absolute left-[4%] top-72 -z-10 hidden lg:block"><Float delay={2.4}><I name="bolt" size={28} className="text-solar-400/40" /></Float></div>
 
@@ -229,6 +244,11 @@ export default function Home() {
               <span className="flex items-center gap-2"><I name="check" size={14} className="text-pulse-400" /> Own it forever or subscribe</span>
               <span className="flex items-center gap-2"><I name="check" size={14} className="text-pulse-400" /> Instant downloads with a guide</span>
               <span className="flex items-center gap-2"><I name="check" size={14} className="text-pulse-400" /> Add-ons from {money(Number.isFinite(minAddon) ? minAddon : 0)}/mo</span>
+            </div>
+            <div className="mt-8 flex flex-wrap gap-x-10 gap-y-4">
+              <div><Counter to={active.length} className="num text-2xl font-bold text-mist-100" /><p className="mt-0.5 text-[11.5px] text-mist-500">Live products</p></div>
+              <div><Counter to={customerCount} className="num text-2xl font-bold text-mist-100" /><p className="mt-0.5 text-[11.5px] text-mist-500">Customers</p></div>
+              <div><Counter to={completedOrders.length} className="num text-2xl font-bold text-mist-100" /><p className="mt-0.5 text-[11.5px] text-mist-500">Orders delivered</p></div>
             </div>
           </div>
           <HeroMock />
@@ -288,7 +308,7 @@ export default function Home() {
             <Link to="/products" className="link-line mb-1 hidden items-center gap-2 text-sm font-semibold text-pulse-300 sm:flex">Browse the full catalog <I name="arrowR" size={15} /></Link>
           </div>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {featured.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
+            {featured.map((p, i) => <ProductCard key={p.id} product={p} index={i} badge={p.id === bestSellerId ? "Most popular" : undefined} />)}
           </div>
         </div>
       </section>
