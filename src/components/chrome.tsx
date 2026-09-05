@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "../lib/store";
 import { I, Logo } from "./icons";
-import { Avatar, Badge, Drawer, timeAgo } from "./ui";
+import { Avatar, Drawer, timeAgo } from "./ui";
 
 const NAV = [
   { to: "/products", label: "Products" },
@@ -286,8 +286,7 @@ export function Footer() {
         <div className="container-x flex flex-col items-center justify-between gap-3 py-5 text-[12px] text-mist-500 sm:flex-row">
           <span>© {new Date().getFullYear()} {s.brand}. {s.tagline}</span>
           <span className="flex items-center gap-2">
-            <Badge tone="solar">Demo build</Badge>
-            Data is seeded & stored locally — contact <a className="text-mist-300 hover:text-pulse-300" href={`mailto:${s.contactEmail}`}>{s.contactEmail}</a>
+            Questions? Contact <a className="text-mist-300 hover:text-pulse-300" href={`mailto:${s.contactEmail}`}>{s.contactEmail}</a>
           </span>
         </div>
       </div>

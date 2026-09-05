@@ -822,7 +822,7 @@ export function AdminStaff() {
             setBusy(true);
             try {
               await addStaff(form.name.trim(), form.email, form.role);
-              toast("success", "Invite sent", `${form.name} can now log in (demo password: invite-pending).`);
+              toast("success", "Invite sent", `${form.name} can now log in.`);
               setInviting(false); setForm({ name: "", email: "", role: "admin" });
             } catch (e) {
               toast("error", "Couldn't invite", e instanceof Error ? e.message : "Try again.");
@@ -896,10 +896,9 @@ export function AdminRoles() {
 
 export function AdminSettings() {
   usePageTitle("Admin · Settings");
-  const { state, can, saveSettings, toast, resetDemo } = useStore();
+  const { state, can, saveSettings, toast } = useStore();
   const [f, setF] = useState({ ...state.settings });
   const [busy, setBusy] = useState(false);
-  const [confirmReset, setConfirmReset] = useState(false);
   if (!can("settings")) return <AdminShell title="Settings" sub="Platform configuration"><Restricted perm="settings" /></AdminShell>;
 
   return (
@@ -955,19 +954,8 @@ export function AdminSettings() {
               </div>
             </div>
           </Reveal>
-          <Reveal delay={0.1}>
-            <div className="card border-flare-500/25 p-6">
-              <h3 className="font-display text-[16px] font-bold text-flare-300">Danger zone</h3>
-              <p className="mt-1.5 text-[12.5px] text-mist-400">Reset every table back to the seeded demo dataset. Customers, orders and settings you changed will be lost.</p>
-              <Btn variant="danger" icon="refresh" className="mt-4" onClick={() => setConfirmReset(true)}>Reset demo data</Btn>
-            </div>
-          </Reveal>
         </div>
       </div>
-      <Confirm open={confirmReset} onClose={() => setConfirmReset(false)} title="Reset all demo data?"
-        body="This wipes local changes and reseeds the platform. Useful after heavy testing."
-        confirmLabel="Reset everything"
-        onConfirm={async () => resetDemo()} />
     </AdminShell>
   );
 }

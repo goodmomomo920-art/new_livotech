@@ -89,7 +89,7 @@ export default function CheckoutPage() {
     setDlKey(f.id);
     try {
       await recordDownload(product.id, f.id, f.name);
-      toast("success", "Download started", `${f.name} — ownership verified, signed URL issued.`);
+      toast("success", "Download started", `${f.name} — ownership verified, opening the file link.`);
     } catch (e) {
       toast("error", "Download blocked", e instanceof Error ? e.message : "Authorization failed.");
     } finally {
@@ -162,7 +162,7 @@ export default function CheckoutPage() {
                       <span className="num min-w-0 flex-1 truncate text-left text-[12.5px] font-semibold text-mist-200">{f.name}</span>
                       <span className="hidden text-[10.5px] text-mist-500 sm:block">{f.type} · {f.size}</span>
                       <Btn size="sm" variant="outline" loading={dlKey === f.id} onClick={() => dlOne(f)}>
-                        {dlKey === f.id ? "Signing URL…" : "Get file"}
+                        {dlKey === f.id ? "Opening…" : "Get file"}
                       </Btn>
                     </div>
                   ))}
@@ -281,7 +281,7 @@ export default function CheckoutPage() {
               </div>
               <div className="mt-5 flex items-center gap-3 rounded-xl border border-mist-100/10 bg-ink-900/70 px-5 py-3.5 text-[12.5px] text-mist-400">
                 <I name="shield" size={16} className="shrink-0 text-pulse-400" />
-                Demo checkout: payment is simulated, but totals are recomputed server-side and ownership only activates after verification — never from the frontend alone.
+                Totals are recomputed server-side, and ownership only activates after payment is verified — never from the frontend alone.
               </div>
             </Reveal>
           ) : (

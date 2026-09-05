@@ -79,7 +79,6 @@ interface StoreCtx {
   saveSettings: (s: Settings) => Promise<void>;
   togglePerm: (role: Role, key: PermissionKey) => Promise<void>;
   broadcast: (title: string, body: string) => Promise<void>;
-  resetDemo: () => void;
 }
 
 const Ctx = createContext<StoreCtx | null>(null);
@@ -439,20 +438,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!me) throw new Error("You must be logged in.");
     const owns = state.ownerships.some((o) => o.customerId === me.id && o.productId === productId && o.status !== "cancelled");
     if (!owns) throw new Error("You don't have access to this file — purchase the product first.");
+    const product = state.products.find((p) => p.id === productId);
+    const file = product?.files.find((f) => f.id === fileId);
+    if (!file?.url) throw new Error("This file isn't linked yet — contact support.");
     check(await supabase.from("downloads").insert({ userId: me.id, productId, fileId, fileName }));
     check(await supabase.from("notifications").insert({ userId: me.id, title: "Download recorded", body: `${fileName}`, kind: "download", href: "/dashboard/downloads" }));
-
-    const product = state.products.find((p) => p.id === productId);
-    const body = [
-      "LivoTech — Secure delivery", "==================================",
-      `File     : ${fileName}`, `Product  : ${product?.name ?? productId} (v${product?.version ?? "?"})`,
-      `Licensed : ${me.name} <${me.email}>`, `Issued   : ${new Date().toLocaleString()}`,
-    ].join("\n");
-    const blob = new Blob([body], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = `${fileName}.txt`;
-    document.body.appendChild(a); a.click(); a.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 4000);
+    window.open(file.url, "_blank", "noopener,noreferrer");
     await loadUserData(me.id);
   }, [me, state.ownerships, state.products, loadUserData]);
 
@@ -692,10 +683,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (me) await loadUserData(me.id);
   }, [state.users, me, can, loadUserData]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const resetDemo = useCallback(() => {
-    toast("info", "Not available", "This build runs on your real Supabase project — there's no local demo data to reset.");
-  }, [toast]);
-
   const value: StoreCtx = {
     state, me, loading, toasts, toast, dismissToast, can, refresh,
     login, register, logout, requestReset, updateProfile, changePassword, sendContact,
@@ -703,7 +690,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     recordDownload, createTicket, replyTicket, setTicketStatus, markNotif, markAllNotifs, cancelSubscription,
     saveProduct, deleteProduct, bulkUpdatePrices, duplicateProduct, saveCategory, deleteCategory, moveCategory, saveAddon, deleteAddon,
     setOrderStatus, setSubStatus, setUserStatus, setUserRole, addStaff, saveCoupon, deleteCoupon,
-    saveSettings, togglePerm, broadcast, resetDemo,
+    saveSettings, togglePerm, broadcast,
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

@@ -10,7 +10,7 @@ export type RolePerms = Record<Role, PermissionKey[]>;
 export type ProductType = "website" | "system" | "saas" | "digital" | "ebook" | "other";
 export type BillingInterval = "once" | "monthly" | "yearly";
 
-export interface ProductFile { id: string; name: string; size: string; type: string; version: string }
+export interface ProductFile { id: string; name: string; size: string; type: string; version: string; url: string }
 export interface ProductFaq { q: string; a: string }
 
 export interface Product {

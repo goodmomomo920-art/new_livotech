@@ -5,6 +5,7 @@ import { I } from "../../components/icons";
 import { Avatar, Badge, Btn, Confirm, EmptyState, Field, fmtDate, fmtDateTime, Modal, money, Pagination, Select, StatusBadge, TextArea, TextInput, timeAgo, usePageTitle } from "../../components/ui";
 import { Reveal, Stagger, StaggerItem } from "../../lib/motion";
 import { DashShell } from "./DashboardA";
+import { downloadInvoicePdf } from "../../lib/invoice";
 import type { Order } from "../../lib/types";
 
 /* ------------------------------- orders ------------------------------- */
@@ -168,23 +169,9 @@ export function BillingPage() {
   const activeSubValue = state.subscriptions.filter((s) => s.customerId === me?.id && s.status === "active" && s.interval === "monthly").reduce((s, x) => s + x.price, 0);
 
   const invoice = (o: Order) => {
-    const lines = [
-      `LivoTech — Invoice ${o.number}`, "=".repeat(38),
-      `Billed to : ${me?.name} <${me?.email}>`,
-      `Date      : ${fmtDate(o.createdAt)}`,
-      `Method    : ${o.paymentMethod}`, "",
-      ...o.items.map((i) => `${i.name.padEnd(34)} ${money(i.total)}`),
-      o.discount ? `${`Discount (${o.couponCode})`.padEnd(34)} -${money(o.discount)}` : "",
-      "-".repeat(38),
-      `${"TOTAL".padEnd(34)} ${money(o.total)}`,
-      "", "Demo document — production invoices are generated server-side.",
-    ].filter(Boolean).join("\n");
-    const blob = new Blob([lines], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = `livo-invoice-${o.number}.txt`; a.click();
-    window.setTimeout(() => URL.revokeObjectURL(url), 3000);
-    toast("success", "Invoice downloaded", `${o.number} exported as a demo document.`);
+    if (!me) return;
+    downloadInvoicePdf(o, { brand: state.settings.brand, contactEmail: state.settings.contactEmail }, { name: me.name, email: me.email, company: me.company });
+    toast("success", "Invoice downloaded", `${o.number} exported as a PDF.`);
   };
 
   return (
@@ -312,7 +299,7 @@ export function DownloadsPage() {
                               <p className="text-[11px] text-mist-500">{f.type} · {f.size} · v{f.version}{count > 0 && ` · downloaded ${count}×`}</p>
                             </div>
                             <Btn size="sm" variant="outline" icon="download" loading={busyKey === f.id} onClick={() => dl(p.id, f.id, f.name)}>
-                              {busyKey === f.id ? "Signing URL…" : "Download"}
+                              {busyKey === f.id ? "Opening…" : "Download"}
                             </Btn>
                           </div>
                         );
@@ -442,7 +429,7 @@ export function SupportPage() {
             </Select>
           </Field>
           <Field label="Message" hint="min 10 characters"><TextArea value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} placeholder="What happened? What did you expect? Include order numbers if relevant." /></Field>
-          <p className="flex items-center gap-2 text-[11.5px] text-mist-500"><I name="upload" size={13} /> Attachments are supported in production (Supabase Storage) — omitted in this demo.</p>
+          <p className="flex items-center gap-2 text-[11.5px] text-mist-500"><I name="upload" size={13} /> Attachments coming soon — for now, include order numbers or links in your message.</p>
         </div>
       </Modal>
     </DashShell>

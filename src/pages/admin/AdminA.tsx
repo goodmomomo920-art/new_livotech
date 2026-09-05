@@ -190,7 +190,7 @@ export function AdminOverview() {
             <div className="mb-5 flex items-center justify-between">
               <div>
                 <h3 className="font-display text-[16px] font-bold tracking-tight">Revenue · last 8 weeks</h3>
-                <p className="text-[11.5px] text-mist-500">Paid orders only, from the live demo dataset</p>
+                <p className="text-[11.5px] text-mist-500">Paid orders only</p>
               </div>
               <Badge tone="pulse" dot>{money(revenue)} total</Badge>
             </div>
@@ -676,16 +676,18 @@ function ProductForm({ product, onClose, onSave }: { product: Product; onClose: 
                 <p className="mb-2 text-[12px] font-bold uppercase tracking-wider text-mist-500">Files · {f.files.length}</p>
                 {f.files.map((file, i) => (
                   <div key={file.id} className="mb-2 flex items-center gap-2 rounded-lg border border-mist-100/10 bg-ink-800/60 px-3 py-2">
-                    <I name="file" size={14} className="text-mist-400" />
-                    <TextInput className="!py-1.5 text-[12.5px]" value={file.name}
+                    <I name="file" size={14} className="text-mist-400 shrink-0" />
+                    <TextInput className="!py-1.5 w-32 shrink-0 text-[12.5px]" value={file.name} placeholder="File name"
                       onChange={(e) => set({ files: f.files.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)) })} />
+                    <TextInput className="!py-1.5 flex-1 text-[12.5px]" value={file.url} placeholder="Google Drive share link"
+                      onChange={(e) => set({ files: f.files.map((x, j) => (j === i ? { ...x, url: e.target.value } : x)) })} />
                     <button onClick={() => set({ files: f.files.filter((_, j) => j !== i) })} className="shrink-0 text-mist-500 hover:text-flare-300" aria-label="Remove file"><I name="close" size={14} /></button>
                   </div>
                 ))}
-                <Btn size="sm" variant="soft" icon="plus" onClick={() => set({ files: [...f.files, { id: `f-${Date.now().toString(36)}`, name: "new-file.zip", size: "1.0 MB", type: "ZIP", version: f.version }] })}>
+                <Btn size="sm" variant="soft" icon="plus" onClick={() => set({ files: [...f.files, { id: `f-${Date.now().toString(36)}`, name: "new-file.zip", size: "1.0 MB", type: "ZIP", version: f.version, url: "" }] })}>
                   Add file
                 </Btn>
-                <p className="mt-2 text-[11px] text-mist-500">Demo: files are delivered as signed delivery documents. Production streams from private Supabase Storage.</p>
+                <p className="mt-2 text-[11px] text-mist-500">Paste a Google Drive "Anyone with the link" share URL for each file. Customers only see this link after their purchase is verified.</p>
               </div>
             </div>
           )}
