@@ -8,6 +8,17 @@ import { Float, Magnetic, Reveal, Tilt } from "../lib/motion";
 import { AddonCard, BrowserFrame, PriceTag, ProductCard, Stars, TypeBadge } from "../components/product";
 import type { BillingInterval } from "../lib/types";
 
+/** Turns a pasted YouTube / Vimeo / direct video URL into an embeddable player URL, or null for a plain image link. */
+function toEmbedUrl(url?: string): string | null {
+  if (!url) return null;
+  const yt = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{6,})/);
+  if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
+  const vimeo = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  if (vimeo) return `https://player.vimeo.com/video/${vimeo[1]}`;
+  return url; // direct file (.mp4/.webm) or already an embed link
+}
+const isDirectVideoFile = (url: string) => /\.(mp4|webm|ogg)(\?|$)/i.test(url);
+
 function DetailSkeleton() {
   return (
     <div className="container-x py-12">
@@ -108,14 +119,35 @@ export default function ProductDetail() {
                   <span className="num flex-1 truncate rounded-md border border-mist-100/10 bg-ink-900 px-3 py-1 text-[11px] text-mist-400">preview · {product.slug}</span>
                 </div>
                 <div className="relative aspect-[3/2] overflow-hidden">
-                  {product.gallery.map((g, i) => (
-                    <img key={g + i} src={g} alt={`${product.name} screenshot ${i + 1}`} className={`absolute inset-0 h-full w-full object-cover object-top transition-opacity duration-500 ${i === imgIdx ? "opacity-100" : "opacity-0"}`} />
-                  ))}
+                  {product.videoUrl && imgIdx === -1 ? (
+                    isDirectVideoFile(product.videoUrl) ? (
+                      <video src={product.videoUrl} controls autoPlay className="absolute inset-0 h-full w-full object-cover object-top" />
+                    ) : (
+                      <iframe src={toEmbedUrl(product.videoUrl) ?? undefined} title={`${product.name} video preview`} allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen className="absolute inset-0 h-full w-full border-0" />
+                    )
+                  ) : product.previewUrl && imgIdx === 0 && !product.gallery[0] ? (
+                    <iframe src={product.previewUrl} title={`${product.name} live preview`} loading="lazy" className="absolute inset-0 h-full w-full border-0 bg-white" />
+                  ) : (
+                    product.gallery.map((g, i) => (
+                      <img key={g + i} src={g} alt={`${product.name} screenshot ${i + 1}`} className={`absolute inset-0 h-full w-full object-cover object-top transition-opacity duration-500 ${i === imgIdx ? "opacity-100" : "opacity-0"}`} />
+                    ))
+                  )}
                 </div>
               </div>
             </Tilt>
           </Reveal>
+          {product.previewUrl && (
+            <a href={product.previewUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1.5 text-[12px] font-semibold text-pulse-300 hover:underline">
+              <I name="external" size={12} /> Open live preview in a new tab
+            </a>
+          )}
           <div className="mt-4 flex gap-3">
+            {product.videoUrl && (
+              <button onClick={() => setImgIdx(-1)} aria-label="Play video preview"
+                className={`relative flex h-20 w-28 shrink-0 items-center justify-center overflow-hidden rounded-lg border-2 bg-ink-800 transition-all duration-200 ${imgIdx === -1 ? "border-pulse-400/70" : "border-mist-100/15 opacity-60 hover:opacity-100"}`}>
+                <span className="grid size-8 place-items-center rounded-full bg-pulse-400 text-ink-950"><I name="external" size={14} /></span>
+              </button>
+            )}
             {product.gallery.map((g, i) => (
               <button key={g + i} onClick={() => setImgIdx(i)} aria-label={`View screenshot ${i + 1}`}
                 className={`h-20 w-28 shrink-0 overflow-hidden rounded-lg border-2 transition-all duration-200 ${i === imgIdx ? "border-pulse-400/70" : "border-mist-100/15 opacity-60 hover:opacity-100"}`}>

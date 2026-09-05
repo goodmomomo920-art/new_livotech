@@ -423,7 +423,7 @@ export function AdminCustomers() {
 
 const blankProduct = (categoryId = ""): Product => ({
   id: `p-${Date.now().toString(36)}`, slug: "", name: "", tagline: "", description: "",
-  type: "website", categoryId, image: "", gallery: [],
+  type: "website", categoryId, image: "", gallery: [], videoUrl: "", previewUrl: "",
   price: 99, currency: "USD", billing: "once", rating: 4.5, reviews: 0,
   features: [], tags: [], faqs: [], files: [], downloadable: false,
   active: true, featured: false, version: "1.0.0",
@@ -661,6 +661,40 @@ function ProductForm({ product, onClose, onSave }: { product: Product; onClose: 
             <TextInput value={f.tags.join(", ")} onChange={(e) => set({ tags: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) })} />
           </Field>
         </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Rating" hint="0 – 5">
+            <TextInput type="number" min={0} max={5} step={0.1} value={f.rating} onChange={(e) => set({ rating: Number(e.target.value) })} />
+          </Field>
+          <Field label="Reviews" hint="number of buyers/reviews shown">
+            <TextInput type="number" min={0} step={1} value={f.reviews} onChange={(e) => set({ reviews: Number(e.target.value) })} />
+          </Field>
+        </div>
+
+        <Field label="Main image URL">
+          <TextInput value={f.image} onChange={(e) => set({ image: e.target.value })} placeholder="https://…" />
+        </Field>
+
+        <div>
+          <p className="mb-2 text-[12px] font-bold uppercase tracking-wider text-mist-500">Gallery images · {f.gallery.length}</p>
+          {f.gallery.map((url, i) => (
+            <div key={i} className="mb-2 flex items-center gap-2 rounded-lg border border-mist-100/10 bg-ink-800/60 px-3 py-2">
+              {url ? <img src={url} alt="" className="h-9 w-12 shrink-0 rounded-md border border-mist-100/12 object-cover object-top" /> : <span className="grid h-9 w-12 shrink-0 place-items-center rounded-md border border-mist-100/12 bg-ink-800 text-mist-500"><I name="box" size={14} /></span>}
+              <TextInput className="!py-1.5 flex-1 text-[12.5px]" value={url} placeholder="https://… image URL"
+                onChange={(e) => set({ gallery: f.gallery.map((x, j) => (j === i ? e.target.value : x)) })} />
+              <button onClick={() => set({ gallery: f.gallery.filter((_, j) => j !== i) })} className="shrink-0 text-mist-500 hover:text-flare-300" aria-label="Remove image"><I name="close" size={14} /></button>
+            </div>
+          ))}
+          <Btn size="sm" variant="soft" icon="plus" onClick={() => set({ gallery: [...f.gallery, ""] })}>Add gallery image</Btn>
+        </div>
+
+        <Field label="Product preview URL" hint="live site link (e.g. sigma-pc-parts.livo.site) — shown as a live embedded preview inside the browser-frame box on the product page">
+          <TextInput value={f.previewUrl ?? ""} onChange={(e) => set({ previewUrl: e.target.value })} placeholder="https://sigma-pc-parts.livo.site" />
+        </Field>
+
+        <Field label="Video URL" hint="YouTube, Vimeo, or a direct .mp4 link — the product page will embed it automatically">
+          <TextInput value={f.videoUrl ?? ""} onChange={(e) => set({ videoUrl: e.target.value })} placeholder="https://youtube.com/watch?v=… or https://…/demo.mp4" />
+        </Field>
 
         <div className={`rounded-xl border p-4 transition-colors ${f.downloadable ? "border-wave-400/40 bg-wave-400/[0.05]" : "border-mist-100/12"}`}>
           <label className="flex items-center gap-2.5 text-[13px] font-semibold">

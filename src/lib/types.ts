@@ -16,7 +16,7 @@ export interface ProductFaq { q: string; a: string }
 export interface Product {
   id: string; slug: string; name: string; tagline: string; description: string;
   type: ProductType; categoryId: string;
-  image: string; gallery: string[];
+  image: string; gallery: string[]; videoUrl?: string; previewUrl?: string;
   price: number; compareAt?: number; monthlyPrice?: number; yearlyPrice?: number;
   currency: "USD" | "EGP";
   billing: "once" | "subscription";
