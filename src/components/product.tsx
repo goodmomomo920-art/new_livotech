@@ -45,13 +45,16 @@ export function PriceTag({ product, size = "md" }: { product: Product; size?: "m
   const big = size === "lg";
   return (
     <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-      {product.compareAt && (
+      {!recurring && product.compareAt && (
         <span className={`num text-mist-500 line-through ${big ? "text-lg" : "text-[13px]"}`}>{money(product.compareAt, product.currency)}</span>
       )}
       <span className={`num font-bold text-mist-100 ${big ? "text-4xl" : "text-xl"}`}>{money(price, product.currency)}</span>
       {recurring && <span className="text-[13px] font-medium text-mist-400">/month</span>}
-      {product.compareAt && (
+      {!recurring && product.compareAt && (
         <Badge tone="solar" className="translate-y-[-1px]">−{Math.round((1 - price / product.compareAt) * 100)}%</Badge>
+      )}
+      {recurring && product.price > 0 && (
+        <span className={`w-full text-[12px] text-mist-500 ${big ? "" : "basis-full"}`}>or {money(product.price, product.currency)} one-time</span>
       )}
     </div>
   );
