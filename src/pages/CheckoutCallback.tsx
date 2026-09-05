@@ -4,7 +4,7 @@ import { useStore } from "../lib/store";
 import { Btn, EmptyState, Spinner, money, usePageTitle } from "../components/ui";
 import type { Order } from "../lib/types";
 
-type Phase = "waiting" | "paid" | "failed" | "error";
+type Phase = "waiting" | "paid" | "pending" | "failed" | "error";
 
 /** Kashier redirects the browser back here after the customer pays (or cancels). This page
  *  never trusts the browser return by itself — it polls the order row, which only the
@@ -40,11 +40,11 @@ export default function CheckoutCallback() {
           setOrder(confirmed);
           setPhase("failed");
         } else {
-          // Still pending after the poll window — Kashier's webhook can lag a few seconds
-          // behind the redirect. Don't declare failure; let the customer check their orders.
+          // Still pending after the poll window — the bank or Kashier's webhook can take
+          // a few minutes in rare cases. This is NOT a failure; don't tell the customer
+          // their payment failed. Let them keep checking or come back to their orders.
           setOrder(confirmed);
-          setPhase("failed");
-          setErr("Still waiting on confirmation from the payment gateway.");
+          setPhase("pending");
         }
       } catch (e) {
         setPhase("error");
@@ -72,10 +72,20 @@ export default function CheckoutCallback() {
     );
   }
 
+  if (phase === "pending") {
+    return (
+      <div className="container-x py-20">
+        <EmptyState icon="clock" title="Waiting on your bank to confirm"
+          body="This usually takes a few seconds and can occasionally take up to 5 minutes. No need to pay again — we'll update your order automatically. Check back here or from your orders page."
+          action={<div className="flex gap-3"><Btn icon="refresh" onClick={() => nav(0)}>Check again</Btn><Link to="/dashboard/orders"><Btn variant="outline">My orders</Btn></Link></div>} />
+      </div>
+    );
+  }
+
   return (
     <div className="container-x py-20">
       <EmptyState icon="alert" title={order?.paymentStatus === "failed" ? "Payment didn't go through" : "Couldn't confirm this payment yet"}
-        body={err || "Your card wasn't charged, or the confirmation is still on its way. Check your orders in a moment, or try again."}
+        body={err || "Something went wrong confirming this payment. Check your orders in a moment, or try again."}
         action={<div className="flex gap-3"><Btn icon="refresh" onClick={() => nav(0)}>Check again</Btn><Link to="/dashboard/orders"><Btn variant="outline">My orders</Btn></Link></div>} />
     </div>
   );

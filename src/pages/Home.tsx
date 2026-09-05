@@ -258,7 +258,7 @@ export default function Home() {
             const typeKey = (Object.entries(TYPE_META).find(([, m]) => m.plural === c.name)?.[0] ?? "other") as keyof typeof TYPE_META;
             return (
               <StaggerItem key={c.id} className={i === 0 ? "sm:col-span-2 lg:col-span-1 lg:row-span-2" : ""}>
-                <Link to={`/products?cat=${c.slug}`} className={`group card card-hover sheen relative flex h-full flex-col justify-between overflow-hidden p-6 ${i === 0 ? "min-h-[260px]" : "min-h-[150px]"}`}>
+                <Link to={`/products?cat=${c.id}`} className={`group card card-hover sheen relative flex h-full flex-col justify-between overflow-hidden p-6 ${i === 0 ? "min-h-[260px]" : "min-h-[150px]"}`}>
                   <div className="absolute -right-8 -top-8 size-32 rounded-full bg-pulse-400/[0.06] blur-2xl transition-all duration-500 group-hover:bg-pulse-400/[0.14]" />
                   <div>
                     <span className="mb-5 grid size-11 place-items-center rounded-xl border border-mist-100/12 bg-ink-800 text-pulse-300 transition-colors duration-300 group-hover:border-pulse-400/50">

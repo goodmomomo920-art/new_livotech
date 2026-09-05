@@ -47,6 +47,15 @@ export default function CatalogPage({ mode }: { mode: CatalogMode }) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
+  // Re-sync local filter state when the URL query changes from outside this page
+  // (e.g. clicking a category card on Home while /products is already mounted).
+  useEffect(() => {
+    setSearch(params.get("q") ?? "");
+    setType(params.get("type") ?? "all");
+    setCat(params.get("cat") ?? "all");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.get("q"), params.get("type"), params.get("cat")]);
+
   const base = useMemo(() => {
     let list = state.products.filter((p) => p.active);
     if (mode === "digital") list = list.filter((p) => p.downloadable && p.type !== "ebook");

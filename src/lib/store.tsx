@@ -422,7 +422,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   /** Polls an order until the Kashier webhook has flipped it to paid/failed, or `timeoutMs`
    *  elapses. The webhook is the only thing that writes paymentStatus — this just waits for it. */
-  const pollOrderPayment = useCallback(async (orderId: string, timeoutMs = 25000): Promise<Order> => {
+  const pollOrderPayment = useCallback(async (orderId: string, timeoutMs = 90000): Promise<Order> => {
     const start = Date.now();
     while (Date.now() - start < timeoutMs) {
       const order = must<Order>(await supabase.from("orders").select("*").eq("id", orderId).single());

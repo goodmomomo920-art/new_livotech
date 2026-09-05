@@ -92,7 +92,7 @@ export default function ProductDetail() {
         <nav className="mb-7 flex flex-wrap items-center gap-2 text-[12.5px] text-mist-500" aria-label="Breadcrumb">
           <Link to="/" className="hover:text-pulse-300">Home</Link> <I name="chevR" size={11} />
           <Link to="/products" className="hover:text-pulse-300">Products</Link> <I name="chevR" size={11} />
-          {category && <><Link to={`/products?cat=${category.slug}`} className="hover:text-pulse-300">{category.name}</Link> <I name="chevR" size={11} /></>}
+          {category && <><Link to={`/products?cat=${category.id}`} className="hover:text-pulse-300">{category.name}</Link> <I name="chevR" size={11} /></>}
           <span className="text-mist-300">{product.name}</span>
         </nav>
       </div>
