@@ -1,31 +1,23 @@
 /**
- * Shows visitors a rough price in their own currency next to the real EGP price.
+ * Shows visitors abroad the price in their own currency instead of EGP.
  *
- * IMPORTANT: this is a DISPLAY-ONLY convenience. The amount actually charged always
- * stays in EGP (product.price / product.currency, untouched, all the way through
- * Checkout.tsx and the Kashier payment call) — this hook never feeds into checkout.
- * Detecting the visitor's country is best-effort (IP geolocation, no login/consent
- * needed) and silently does nothing if it fails, is blocked, or the visitor is in Egypt.
+ * IMPORTANT: this is DISPLAY-ONLY. The amount actually charged always stays in EGP
+ * (product.price / product.currency, untouched, all the way through Checkout.tsx and
+ * the Kashier payment call) — this hook never feeds into checkout. Detecting the
+ * visitor's country is best-effort (IP geolocation, no login/consent needed) and
+ * silently falls back to EGP if it fails, is blocked, or the visitor is in Egypt.
+ *
+ * The EGP-per-unit rates are editable in Admin › Settings › "Foreign currency display"
+ * (stored in the settings table's fxRates column) — DEFAULT_RATES below is only the
+ * fallback used before that setting has loaded, or for currencies not configured there.
  */
 import { useEffect, useState } from "react";
 
-// Static, occasionally-updated approximate EGP value of 1 unit of each currency.
-// Update these numbers every so often to keep the hint roughly accurate — they only
-// drive the small "≈" hint text, never the real charge.
-const EGP_PER_UNIT: Record<string, number> = {
-  USD: 51,
-  EUR: 55,
-  GBP: 64,
-  SAR: 13.6,
-  AED: 13.9,
-  KWD: 166,
-  QAR: 14,
-};
+const DEFAULT_RATES: Record<string, number> = { USD: 51, SAR: 13.6 };
 
 const COUNTRY_TO_CURRENCY: Record<string, string> = {
-  US: "USD", CA: "USD", GB: "GBP",
-  DE: "EUR", FR: "EUR", IT: "EUR", ES: "EUR", NL: "EUR", IE: "EUR", PT: "EUR", BE: "EUR", AT: "EUR", GR: "EUR",
-  SA: "SAR", AE: "AED", KW: "KWD", QA: "QAR",
+  US: "USD", CA: "USD",
+  SA: "SAR",
 };
 
 type GeoState = { currency: string; countryCode: string } | null;
@@ -50,36 +42,39 @@ async function detectGeoCurrency(): Promise<GeoState> {
       try { sessionStorage.setItem("livotech_geo_currency", JSON.stringify(result)); } catch { /* ignore */ }
       return (cached = result);
     } catch {
-      return (cached = null); // network blocked, rate-limited, etc. — just skip the hint
+      return (cached = null); // network blocked, rate-limited, etc. — just stay in EGP
     }
   })();
   return inflight;
 }
 
+const formatAmount = (amount: number, currency: string) =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: amount % 1 ? 2 : 0 }).format(amount);
+
 /**
- * Given an amount already in EGP, returns a short "≈ $270" style hint for the
- * visitor's likely local currency, or null while loading / if unavailable / if
- * the visitor appears to already be in Egypt (no hint needed).
+ * Given an amount already in EGP, returns the price formatted for display:
+ * - Visitor in Egypt / undetected / unsupported currency → the real EGP amount.
+ * - Visitor abroad with a configured currency (USD, SAR, …) → converted to that
+ *   currency using `rates` (pass state.settings.fxRates from the admin-editable setting).
+ *
+ * This never changes what is actually charged — Checkout.tsx keeps using
+ * product.price / product.currency (EGP) untouched, exactly like before.
  */
-export function useApproxForeignPrice(amountEgp: number): string | null {
-  const [hint, setHint] = useState<string | null>(null);
+export function useDisplayPrice(amountEgp: number, realCurrency: string, rates: Record<string, number> = DEFAULT_RATES): string {
+  const [display, setDisplay] = useState(() => formatAmount(amountEgp, realCurrency));
 
   useEffect(() => {
     let cancelled = false;
+    if (realCurrency !== "EGP") { setDisplay(formatAmount(amountEgp, realCurrency)); return; }
     detectGeoCurrency().then((geo) => {
-      if (cancelled || !geo || geo.countryCode === "EG") return;
-      const rate = EGP_PER_UNIT[geo.currency];
-      if (!rate) return;
-      const converted = amountEgp / rate;
-      const formatted = new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: geo.currency,
-        maximumFractionDigits: converted % 1 ? 2 : 0,
-      }).format(converted);
-      setHint(`≈ ${formatted}`);
+      if (cancelled) return;
+      if (!geo || geo.countryCode === "EG") { setDisplay(formatAmount(amountEgp, realCurrency)); return; }
+      const rate = rates[geo.currency] ?? DEFAULT_RATES[geo.currency];
+      if (!rate) { setDisplay(formatAmount(amountEgp, realCurrency)); return; }
+      setDisplay(formatAmount(amountEgp / rate, geo.currency));
     });
     return () => { cancelled = true; };
-  }, [amountEgp]);
+  }, [amountEgp, realCurrency, rates]);
 
-  return hint;
+  return display;
 }

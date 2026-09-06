@@ -108,6 +108,7 @@ export interface Settings {
   contactEmail: string; supportEmail: string;
   twitter: string; github: string; linkedin: string;
   maintenance: boolean;
+  fxRates: Record<string, number>; // EGP value of 1 unit of each currency, e.g. { USD: 51, SAR: 13.6 } — editable in Admin › Settings
 }
 
 export interface ContactMsg { id: string; name: string; email: string; subject: string; body: string; at: string }
