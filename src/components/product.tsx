@@ -4,7 +4,8 @@ import { TYPE_META } from "../lib/seed";
 import { I } from "./icons";
 import { Badge, money } from "./ui";
 import { Reveal } from "../lib/motion";
-import { useApproxForeignPrice } from "../lib/geoCurrency";
+import { useDisplayPrice } from "../lib/geoCurrency";
+import { useStore } from "../lib/store";
 
 /* ------------------------------- type badge ------------------------------- */
 
@@ -44,18 +45,19 @@ export function PriceTag({ product, size = "md" }: { product: Product; size?: "m
   const recurring = product.billing === "subscription";
   const price = recurring ? product.monthlyPrice ?? product.price : product.price;
   const big = size === "lg";
-  const approxHint = useApproxForeignPrice(product.currency === "EGP" ? price : 0);
+  const { state } = useStore();
+  const displayPrice = useDisplayPrice(price, product.currency, state.settings.fxRates);
+  const displayCompareAt = useDisplayPrice(product.compareAt ?? 0, product.currency, state.settings.fxRates);
   return (
     <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
       {!recurring && product.compareAt && (
-        <span className={`num text-mist-500 line-through ${big ? "text-lg" : "text-[13px]"}`}>{money(product.compareAt, product.currency)}</span>
+        <span className={`num text-mist-500 line-through ${big ? "text-lg" : "text-[13px]"}`}>{displayCompareAt}</span>
       )}
-      <span className={`num font-bold text-mist-100 ${big ? "text-4xl" : "text-xl"}`}>{money(price, product.currency)}</span>
+      <span className={`num font-bold text-mist-100 ${big ? "text-4xl" : "text-xl"}`}>{displayPrice}</span>
       {recurring && <span className="text-[13px] font-medium text-mist-400">/month</span>}
       {!recurring && product.compareAt && (
         <Badge tone="solar" className="translate-y-[-1px]">−{Math.round((1 - price / product.compareAt) * 100)}%</Badge>
       )}
-      {approxHint && <span className={`num text-mist-500 ${big ? "text-sm" : "text-[11.5px]"}`}>({approxHint})</span>}
       {recurring && product.price > 0 && (
         <span className={`w-full text-[12px] text-mist-500 ${big ? "" : "basis-full"}`}>or {money(product.price, product.currency)} one-time</span>
       )}
