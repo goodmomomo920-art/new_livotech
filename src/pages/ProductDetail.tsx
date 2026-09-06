@@ -63,6 +63,11 @@ export default function ProductDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
 
+  const unit = product ? (interval === "monthly" ? product.monthlyPrice ?? product.price : interval === "yearly" ? product.yearlyPrice ?? product.price : product.price) : 0;
+  const addonTotal = selectedAddons.reduce((s, id) => s + (state.addons.find((a) => a.id === id)?.price ?? 0), 0);
+  const total = unit + addonTotal;
+  const totalApproxHint = useApproxForeignPrice(product?.currency === "EGP" ? total : 0);
+
   if (!loaded) return <DetailSkeleton />;
 
   if (!product) {
@@ -80,11 +85,6 @@ export default function ProductDetail() {
   const addons = state.addons.filter((a) => isAddonCompatible(a, product));
   const related = state.products.filter((p) => p.active && p.id !== product.id && (p.type === product.type || p.categoryId === product.categoryId)).slice(0, 3);
   const owned = me && state.ownerships.some((o) => o.customerId === me.id && o.productId === product.id && o.status === "active");
-
-  const unit = interval === "monthly" ? product.monthlyPrice ?? product.price : interval === "yearly" ? product.yearlyPrice ?? product.price : product.price;
-  const addonTotal = selectedAddons.reduce((s, id) => s + (state.addons.find((a) => a.id === id)?.price ?? 0), 0);
-  const total = unit + addonTotal;
-  const totalApproxHint = useApproxForeignPrice(product?.currency === "EGP" ? total : 0);
 
   const startPurchase = (goCheckout: boolean) => {
     setCart({ productId: product.id, interval, addonIds: selectedAddons });
