@@ -4,6 +4,7 @@ import { TYPE_META } from "../lib/seed";
 import { I } from "./icons";
 import { Badge, money } from "./ui";
 import { Reveal } from "../lib/motion";
+import { useApproxForeignPrice } from "../lib/geoCurrency";
 
 /* ------------------------------- type badge ------------------------------- */
 
@@ -43,6 +44,7 @@ export function PriceTag({ product, size = "md" }: { product: Product; size?: "m
   const recurring = product.billing === "subscription";
   const price = recurring ? product.monthlyPrice ?? product.price : product.price;
   const big = size === "lg";
+  const approxHint = useApproxForeignPrice(product.currency === "EGP" ? price : 0);
   return (
     <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
       {!recurring && product.compareAt && (
@@ -53,6 +55,7 @@ export function PriceTag({ product, size = "md" }: { product: Product; size?: "m
       {!recurring && product.compareAt && (
         <Badge tone="solar" className="translate-y-[-1px]">−{Math.round((1 - price / product.compareAt) * 100)}%</Badge>
       )}
+      {approxHint && <span className={`num text-mist-500 ${big ? "text-sm" : "text-[11.5px]"}`}>({approxHint})</span>}
       {recurring && product.price > 0 && (
         <span className={`w-full text-[12px] text-mist-500 ${big ? "" : "basis-full"}`}>or {money(product.price, product.currency)} one-time</span>
       )}
