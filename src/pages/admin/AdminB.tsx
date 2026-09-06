@@ -938,6 +938,30 @@ export function AdminSettings() {
             }}>Save settings</Btn>
           </div>
         </Reveal>
+        <Reveal delay={0.03}>
+          <div className="card space-y-4 p-6">
+            <h3 className="font-display text-[16px] font-bold">Foreign currency display</h3>
+            <p className="text-[12.5px] text-mist-500">
+              Visitors browsing from outside Egypt see prices converted to their local currency (USD, SAR…) — this is display-only, the amount actually charged always stays in EGP. Set how many EGP each unit is worth below.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="1 USD = ? EGP">
+                <TextInput type="number" min={0} step={0.01} value={f.fxRates?.USD ?? ""}
+                  onChange={(e) => setF({ ...f, fxRates: { ...f.fxRates, USD: Number(e.target.value) } })} />
+              </Field>
+              <Field label="1 SAR = ? EGP">
+                <TextInput type="number" min={0} step={0.01} value={f.fxRates?.SAR ?? ""}
+                  onChange={(e) => setF({ ...f, fxRates: { ...f.fxRates, SAR: Number(e.target.value) } })} />
+              </Field>
+            </div>
+            <Btn icon="check" loading={busy} onClick={async () => {
+              setBusy(true);
+              try { await saveSettings(f); toast("success", "Rates saved", "New conversions apply immediately."); }
+              catch (e) { toast("error", "Couldn't save rates", e instanceof Error ? e.message : "Try again."); }
+              setBusy(false);
+            }}>Save rates</Btn>
+          </div>
+        </Reveal>
         <div className="space-y-6">
           <Reveal delay={0.06}>
             <div className="card p-6">
