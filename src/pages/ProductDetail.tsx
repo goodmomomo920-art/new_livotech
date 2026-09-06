@@ -7,7 +7,8 @@ import { Badge, Btn, money, Sk, usePageTitle } from "../components/ui";
 import { Float, Magnetic, Reveal, Tilt } from "../lib/motion";
 import { AddonCard, BrowserFrame, PriceTag, ProductCard, Stars, TypeBadge } from "../components/product";
 import type { BillingInterval } from "../lib/types";
-import { useDisplayPrice } from "../lib/geoCurrency";
+import { useDisplayPrice, useCurrencyConverter } from "../lib/geoCurrency";
+import { useLocalizedText, useLocalizedList } from "../lib/geoTranslate";
 
 /** Turns a pasted YouTube / Vimeo / direct video URL into an embeddable player URL, or null for a plain image link. */
 function toEmbedUrl(url?: string): string | null {
@@ -67,6 +68,10 @@ export default function ProductDetail() {
   const addonTotal = selectedAddons.reduce((s, id) => s + (state.addons.find((a) => a.id === id)?.price ?? 0), 0);
   const total = unit + addonTotal;
   const totalDisplay = useDisplayPrice(total, product?.currency ?? "EGP", state.settings.fxRates);
+  const convertPrice = useCurrencyConverter(product?.currency ?? "EGP", state.settings.fxRates);
+  const tagline = useLocalizedText(product?.tagline ?? "");
+  const description = useLocalizedText(product?.description ?? "");
+  const features = useLocalizedList(product?.features ?? []);
 
   if (!loaded) return <DetailSkeleton />;
 
@@ -169,7 +174,7 @@ export default function ProductDetail() {
             </div>
             <h1 className="mt-4 font-display text-4xl font-bold leading-[1.04] tracking-tight">{product.name}</h1>
             <div className="mt-3"><Stars rating={product.rating} reviews={product.reviews} size={15} /></div>
-            <p className="mt-4 text-[15px] leading-relaxed text-mist-300">{product.tagline}</p>
+            <p className="mt-4 text-[15px] leading-relaxed text-mist-300">{tagline}</p>
 
             <div className="card mt-7 p-6">
               {product.billing === "subscription" && (product.monthlyPrice || product.yearlyPrice) ? (
@@ -180,7 +185,7 @@ export default function ProductDetail() {
                       <button key={iv} onClick={() => setInterval(iv)} aria-pressed={interval === iv}
                         className={`rounded-lg border px-3 py-2.5 text-left transition-all duration-200 ${interval === iv ? "border-pulse-400/60 bg-pulse-400/10" : "border-mist-100/12 hover:border-mist-100/30"}`}>
                         <span className={`block text-[11px] font-semibold uppercase tracking-wider ${interval === iv ? "text-pulse-300" : "text-mist-500"}`}>{label}</span>
-                        <span className="num text-[15px] font-bold text-mist-100">{money(p, product.currency)}</span>
+                        <span className="num text-[15px] font-bold text-mist-100">{convertPrice(p)}</span>
                       </button>
                     );
                   })}
@@ -198,7 +203,7 @@ export default function ProductDetail() {
                       return (
                         <button key={a.id} onClick={() => setSelectedAddons((s) => (on ? s.filter((x) => x !== a.id) : [...s, a.id]))} aria-pressed={on}
                           className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[12px] font-semibold transition-all duration-200 ${on ? "border-pulse-400/60 bg-pulse-400/10 text-pulse-300" : "border-mist-100/12 text-mist-400 hover:border-mist-100/30"}`}>
-                          <I name={a.icon} size={13} /> {a.name} <span className="num text-mist-500">{money(a.price, product.currency)}/mo</span>
+                          <I name={a.icon} size={13} /> {a.name} <span className="num text-mist-500">{convertPrice(a.price)}/mo</span>
                         </button>
                       );
                     })}
@@ -247,7 +252,7 @@ export default function ProductDetail() {
           <Reveal>
             <p className="eyebrow mb-3">About this product</p>
             <h2 className="font-display text-2xl font-bold tracking-tight">What you're getting</h2>
-            {product.description.split("\n\n").map((par) => (
+            {description.split("\n\n").map((par) => (
               <p key={par.slice(0, 24)} className="mt-4 text-[14.5px] leading-[1.75] text-mist-300">{par}</p>
             ))}
             <div className="mt-6 flex flex-wrap gap-2">
@@ -258,7 +263,7 @@ export default function ProductDetail() {
             <div className="card p-6">
               <p className="eyebrow mb-4">Features</p>
               <ul className="grid gap-3 sm:grid-cols-2">
-                {product.features.map((f) => (
+                {features.map((f) => (
                   <li key={f} className="flex items-start gap-2.5 text-[13.5px] text-mist-300">
                     <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-md bg-pulse-400/15 text-pulse-300"><I name="check" size={11} strokeWidth={2.6} /></span>
                     {f}
