@@ -7,6 +7,7 @@ import { Badge, Btn, money, Sk, usePageTitle } from "../components/ui";
 import { Float, Magnetic, Reveal, Tilt } from "../lib/motion";
 import { AddonCard, BrowserFrame, PriceTag, ProductCard, Stars, TypeBadge } from "../components/product";
 import type { BillingInterval } from "../lib/types";
+import { useApproxForeignPrice } from "../lib/geoCurrency";
 
 /** Turns a pasted YouTube / Vimeo / direct video URL into an embeddable player URL, or null for a plain image link. */
 function toEmbedUrl(url?: string): string | null {
@@ -83,6 +84,7 @@ export default function ProductDetail() {
   const unit = interval === "monthly" ? product.monthlyPrice ?? product.price : interval === "yearly" ? product.yearlyPrice ?? product.price : product.price;
   const addonTotal = selectedAddons.reduce((s, id) => s + (state.addons.find((a) => a.id === id)?.price ?? 0), 0);
   const total = unit + addonTotal;
+  const totalApproxHint = useApproxForeignPrice(product?.currency === "EGP" ? total : 0);
 
   const startPurchase = (goCheckout: boolean) => {
     setCart({ productId: product.id, interval, addonIds: selectedAddons });
@@ -206,8 +208,11 @@ export default function ProductDetail() {
 
               <div className="flex items-center justify-between border-t border-mist-100/10 pt-4">
                 <span className="text-[13px] text-mist-400">Total {interval !== "once" ? "today" : ""}</span>
-                <span className="num text-2xl font-bold text-mist-100">
-                  {money(total, product.currency)}{interval !== "once" && <span className="text-sm font-medium text-mist-500"> /{interval === "monthly" ? "mo" : "yr"}</span>}
+                <span className="text-right">
+                  <span className="num text-2xl font-bold text-mist-100">
+                    {money(total, product.currency)}{interval !== "once" && <span className="text-sm font-medium text-mist-500"> /{interval === "monthly" ? "mo" : "yr"}</span>}
+                  </span>
+                  {totalApproxHint && <span className="num block text-[12px] text-mist-500">{totalApproxHint}</span>}
                 </span>
               </div>
 
