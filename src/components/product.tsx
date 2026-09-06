@@ -5,6 +5,7 @@ import { I } from "./icons";
 import { Badge, money } from "./ui";
 import { Reveal } from "../lib/motion";
 import { useDisplayPrice } from "../lib/geoCurrency";
+import { useLocalizedText } from "../lib/geoTranslate";
 import { useStore } from "../lib/store";
 
 /* ------------------------------- type badge ------------------------------- */
@@ -69,6 +70,9 @@ export function PriceTag({ product, size = "md" }: { product: Product; size?: "m
 
 export function ProductCard({ product, index = 0, badge }: { product: Product; index?: number; badge?: string }) {
   const isNew = Date.now() - new Date(product.createdAt).getTime() < 1000 * 60 * 60 * 24 * 30;
+  const tagline = useLocalizedText(product.tagline);
+  const quickPreviewLabel = useLocalizedText("معاينة سريعة");
+  const newLabel = useLocalizedText("جديد");
   return (
     <Reveal delay={Math.min(index * 0.06, 0.3)} className="h-full">
       <Link
@@ -84,12 +88,12 @@ export function ProductCard({ product, index = 0, badge }: { product: Product; i
           {/* quick-view overlay on hover */}
           <div className="absolute inset-0 flex items-center justify-center bg-ink-950/0 opacity-0 transition-all duration-300 group-hover:bg-ink-950/35 group-hover:opacity-100">
             <span className="translate-y-2 rounded-full bg-ink-900/95 px-4 py-2 text-[12.5px] font-semibold text-mist-100 shadow-lg transition-transform duration-300 group-hover:translate-y-0">
-              <I name="eye" size={13} className="mr-1.5 inline -translate-y-px" /> معاينة سريعة
+              <I name="eye" size={13} className="mr-1.5 inline -translate-y-px" /> {quickPreviewLabel}
             </span>
           </div>
           <div className="absolute left-3 top-3 flex gap-1.5">
             {badge && <Badge tone="pulse">{badge}</Badge>}
-            {isNew && <Badge tone="wave">جديد</Badge>}
+            {isNew && <Badge tone="wave">{newLabel}</Badge>}
             {product.featured && <Badge tone="solar">Featured</Badge>}
             {product.downloadable && <Badge tone="wave">Instant download</Badge>}
           </div>
@@ -102,7 +106,7 @@ export function ProductCard({ product, index = 0, badge }: { product: Product; i
             </h3>
             <Stars rating={product.rating} size={11.5} />
           </div>
-          <p className="mt-1.5 line-clamp-2 text-[13.5px] leading-relaxed text-mist-400">{product.tagline}</p>
+          <p className="mt-1.5 line-clamp-2 text-[13.5px] leading-relaxed text-mist-400">{tagline}</p>
           <div className="mt-auto flex items-center justify-between pt-5">
             <PriceTag product={product} />
             <span className="grid size-9 place-items-center rounded-full border border-mist-100/15 text-mist-400 transition-all duration-300 group-hover:border-pulse-400/60 group-hover:bg-pulse-400 group-hover:text-ink-950 group-hover:translate-x-0.5">
